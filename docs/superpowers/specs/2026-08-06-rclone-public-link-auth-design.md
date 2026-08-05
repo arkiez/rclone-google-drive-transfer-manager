@@ -1,7 +1,7 @@
 # Rclone Transfer Manager: Public Link Authentication
 
 Date: 2026-08-06
-Status: Design approved in conversation; written-spec review pending
+Status: Approved by user; implemented in version 1.1.0
 
 ## Context
 
@@ -80,10 +80,11 @@ are rejected with an explanation. The first implementation may accept
 provider direct-download URLs and known file URL forms only when the download
 path can be passed safely to rclone.
 
-The direct-file transfer uses rclone copyurl with automatic filename and
-HTTP-header filename support, writing into the selected local destination
-folder. Rclone documents copyurl as downloading URL content to a destination
-and supports --auto-filename and --header-filename.
+The direct-file transfer first performs a header-only public HTTP preflight to
+reject sign-in pages and determine a safe filename from Content-Disposition or
+the final URL. It then uses rclone copyurl with an explicit destination file
+and --no-clobber, writing into the selected local destination folder. Rclone
+documents copyurl as downloading URL content to a destination.
 
 References:
 

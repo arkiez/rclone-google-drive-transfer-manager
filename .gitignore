@@ -1,0 +1,27 @@
+# .NET build output
+**/bin/
+**/obj/
+dist/
+
+# Generated release artifacts
+*.zip
+RcloneTransferManager-v*-win-x64/
+
+# Runtime data and credentials
+data/
+logs/
+**/data/
+**/logs/
+*.conf
+
+# Local tool caches
+.dotnet-cli-home/
+.nuget/
+.superpowers/
+
+# Bundled rclone documentation and retired local binary
+README.txt
+README.html
+rclone.1
+rclone.old.exe
+git-log.txt
