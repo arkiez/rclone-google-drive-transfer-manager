@@ -4,10 +4,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
+$versionProps = Join-Path $root "Version.props"
+if (-not (Test-Path -LiteralPath $versionProps -PathType Leaf)) {
+    throw "Version.props not found: $versionProps"
+}
+[xml]$versionDocument = Get-Content -Raw -LiteralPath $versionProps
+$version = [string]$versionDocument.Project.PropertyGroup.Version
+if ($version -notmatch '^\d+\.\d+\.\d+$') {
+    throw "Version.props must contain a major.minor.patch Version."
+}
+
 $project = Join-Path $root "src\RcloneTransferManager\RcloneTransferManager.csproj"
 $publish = Join-Path $root "dist\RcloneTransferManager"
-$zip = Join-Path $root "RcloneTransferManager-v1.1.1-win-x64.zip"
-$stagingZip = Join-Path $root "dist\RcloneTransferManager-v1.1.1-win-x64.staging.zip"
+$zip = Join-Path $root "RcloneTransferManager-v$version-win-x64.zip"
+$stagingZip = Join-Path $root "dist\RcloneTransferManager-v$version-win-x64.staging.zip"
 $readme = Join-Path $root "docs\RcloneTransferManager-README.txt"
 
 if (-not (Test-Path -LiteralPath $project)) { throw "Project not found: $project" }
@@ -19,7 +29,15 @@ if (Test-Path -LiteralPath $stagingZip) { Remove-Item -LiteralPath $stagingZip -
 & $DotnetCommand publish $project --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $publish
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
 
-Copy-Item -LiteralPath $readme -Destination (Join-Path $publish "README.txt")
+$readmeTemplate = Get-Content -Raw -LiteralPath $readme
+if (-not $readmeTemplate.Contains("{{VERSION}}")) {
+    throw "Packaged README template is missing {{VERSION}}."
+}
+$readmeText = $readmeTemplate.Replace("{{VERSION}}", $version)
+[IO.File]::WriteAllText(
+    (Join-Path $publish "README.txt"),
+    $readmeText,
+    [Text.UTF8Encoding]::new($false))
 New-Item -ItemType Directory -Path (Join-Path $publish "data") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $publish "logs") -Force | Out-Null
 

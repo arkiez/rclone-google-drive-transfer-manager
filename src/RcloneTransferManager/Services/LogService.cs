@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace RcloneTransferManager.Services;
@@ -34,6 +35,11 @@ public sealed class LogService
 public static class AppInfo
 {
     public const string Name = "Rclone Transfer Manager";
-    public const string Version = "1.1.1";
+    public static string Version { get; } =
+        typeof(AppInfo).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion.Split('+')[0]
+        ?? typeof(AppInfo).Assembly.GetName().Version?.ToString(3)
+        ?? "unknown";
     public const string Creator = "Arkie'z K. Khositkhanawut";
 }

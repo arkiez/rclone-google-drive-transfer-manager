@@ -23,6 +23,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Title = $"{AppInfo.Name} v{AppInfo.Version}";
+        VersionText.Text = $"v{AppInfo.Version}  |  {AppInfo.Creator}";
         _config = new RcloneConfigService(_runner, _log);
         _transferService = new TransferService(_runner, _config, _log);
         SourceCloudRadio.Checked += SourceLocationMode_Checked;
