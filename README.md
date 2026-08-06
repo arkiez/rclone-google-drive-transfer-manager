@@ -35,5 +35,20 @@ regenerate the checked-in program icon after changing its SVG source, run
 Runtime credentials are stored in the local data folder and are intentionally
 ignored by Git. Never commit a populated data or logs folder.
 
+## Versioning
+
+Before committing or pushing a code change, update `Version.props` in the same
+commit:
+
+- Breaking or incompatible change: increment major and reset minor/patch.
+- Backward-compatible feature: increment minor and reset patch.
+- Backward-compatible bug fix or small behavior correction: increment patch.
+- Documentation-only change: do not change the version.
+
+Keep all visible versions and package names derived from `Version.props`, then
+verify the result with:
+
+    .\scripts\version-test.ps1
+
 See the user guide at docs\RcloneTransferManager-README.txt for usage and
 security notes.
