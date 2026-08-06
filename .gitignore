@@ -18,6 +18,7 @@ logs/
 .dotnet-cli-home/
 .nuget/
 .superpowers/
+.worktrees/
 
 # Bundled rclone documentation and retired local binary
 README.txt
