@@ -8,8 +8,27 @@ public partial class App : System.Windows.Application
 {
     protected override void OnStartup(StartupEventArgs e)
     {
-        AppPaths.Ensure();
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppPaths.Ensure();
+        if (!File.Exists(AppPaths.RcloneExecutable))
+        {
+            System.Windows.MessageBox.Show(
+                AppPaths.MissingRcloneMessage,
+                "Required component missing",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown(1);
+            return;
+        }
+        if (!AppPaths.TryDeleteLegacyJobsFile(out var cleanupError))
+        {
+            try { new LogService().Write("Cleanup", cleanupError); } catch { }
+            System.Windows.MessageBox.Show(
+                cleanupError,
+                "Cleanup warning",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
         base.OnStartup(e);
     }
 

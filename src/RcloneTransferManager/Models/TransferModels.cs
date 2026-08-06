@@ -30,14 +30,10 @@ public sealed record ResolvedLocation(
 public sealed class TransferJob
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "Untitled job";
+    public string Name { get; set; } = "Transfer";
     public string Source { get; set; } = string.Empty;
     public string Destination { get; set; } = string.Empty;
     public TransferMode Mode { get; set; } = TransferMode.Copy;
-    public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
-    public DateTime? LastRunUtc { get; set; }
-    public string LastRunStatus { get; set; } = "Never run";
-    public override string ToString() => Name;
 }
 
 public sealed record TransferRequest(TransferJob Job, IReadOnlyCollection<string> ExcludedPaths);

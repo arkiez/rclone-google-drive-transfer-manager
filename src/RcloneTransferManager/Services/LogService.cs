@@ -7,13 +7,13 @@ public sealed class LogService
     private static readonly Regex SecretRegex = new("(?i)(token|password|client_secret)=([^\\s]+)", RegexOptions.Compiled);
     private static readonly Regex UrlRegex = new("(?i)https?://[^\\s]+", RegexOptions.Compiled);
 
-    public string CreateJobLog(string jobName, string? rcloneVersion = null)
+    public string CreateTransferLog(string transferName, string? rcloneVersion = null)
     {
-        var safe = string.Join("_", jobName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        var safe = string.Join("_", transferName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
         safe = string.IsNullOrWhiteSpace(safe) ? "transfer" : safe;
         var path = Path.Combine(AppPaths.Logs, $"{DateTime.Now:yyyyMMdd-HHmmss}_{safe}.log");
         WriteFile(path, $"{AppInfo.Name} v{AppInfo.Version} | {AppInfo.Creator}");
-        WriteFile(path, $"Job: {jobName}");
+        WriteFile(path, $"Transfer: {transferName}");
         if (!string.IsNullOrWhiteSpace(rcloneVersion)) WriteFile(path, $"Engine: {rcloneVersion}");
         return path!;
     }

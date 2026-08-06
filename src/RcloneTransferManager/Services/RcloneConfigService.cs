@@ -51,6 +51,7 @@ public sealed class RcloneConfigService
 
     public async Task<bool> ConnectAsync(LocationKind kind, Action<string>? status, CancellationToken cancellationToken = default)
     {
+        AppPaths.EnsureRcloneAvailable();
         var name = RemoteName(kind);
         var type = kind == LocationKind.GoogleDrive ? "drive" : "onedrive";
         var arguments = HasRemote(name)

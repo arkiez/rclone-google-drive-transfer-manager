@@ -9,10 +9,13 @@ Creator: Arkie'z K. Khositkhanawut
 ## Highlights
 
 - Compact WPF interface; no Command Prompt required.
+- Explicit Cloud or Local selectors for each transfer location.
 - Copy and Sync with conflict handling and Sync preview.
 - Google Drive and OneDrive browser OAuth.
 - Public direct-download file URL to a local folder without login.
 - Cloud folder and shared links use the connected provider account.
+- A completion popup confirms every successful transfer.
+- The portable package has one clear program entry point.
 
 ## Build
 
@@ -23,6 +26,11 @@ Use the .NET 8 Windows Desktop SDK:
 
 The release package is created as
 RcloneTransferManager-v1.1.1-win-x64.zip.
+
+After extraction, open RcloneTransferManager.exe. The bundled backend is kept
+under _internal and is started automatically; do not open or move it. To
+regenerate the checked-in program icon after changing its SVG source, run
+.\scripts\generate-icon.ps1.
 
 Runtime credentials are stored in the local data folder and are intentionally
 ignored by Git. Never commit a populated data or logs folder.

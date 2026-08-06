@@ -1,10 +1,18 @@
 param(
-    [string]$RclonePath = ""
+    [string]$RclonePath = "",
+    [string]$AppRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-if ([string]::IsNullOrWhiteSpace($RclonePath)) { $RclonePath = Join-Path $root "rclone.exe" }
+if ([string]::IsNullOrWhiteSpace($RclonePath)) {
+    $RclonePath = if ([string]::IsNullOrWhiteSpace($AppRoot)) {
+        Join-Path $root "rclone.exe"
+    }
+    else {
+        Join-Path $AppRoot "_internal\rclone.exe"
+    }
+}
 if (-not (Test-Path -LiteralPath $RclonePath)) { throw "rclone.exe not found: $RclonePath" }
 
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("rtm-smoke-" + [guid]::NewGuid().ToString("N"))

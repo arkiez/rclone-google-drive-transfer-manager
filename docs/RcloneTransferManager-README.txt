@@ -15,11 +15,13 @@ Quick start
 -----------
 1. Extract the ZIP to a folder you can write to.
 2. Open RcloneTransferManager.exe.
+   This is the only program file you need to open.
 3. Open Accounts and connect Google Drive or OneDrive when needed. The login
    flow opens in your default browser.
-4. Paste a source and destination link/path.
-5. Choose Copy (the safe default) or Sync.
-6. Save the job if you want to reuse the setup, then Start Transfer.
+4. Select Cloud or Local independently for Source and Destination.
+5. Paste a cloud link, paste a local folder path, or use Browse in Local mode.
+6. Choose Copy (the safe default) or Sync, then select Start.
+7. A confirmation popup appears when the transfer finishes successfully.
 
 Copy and Sync safety
 --------------------
@@ -35,13 +37,17 @@ Portable data and credentials
 -----------------------------
 The app keeps its local data beside the executable:
 
-  data\jobs.json       Saved transfer jobs
+  _internal\rclone.exe Required transfer backend; do not open or move it
   data\rclone.conf     OAuth configuration and tokens
   logs\                Saved transfer logs and diagnostics
 
 The release ZIP contains an empty data and logs folder. Authentication must be
 performed separately on each machine. Do not share a populated data folder or
 rclone.conf; it contains credentials for the connected accounts.
+
+Keep the complete extracted folder together. If the app reports that the
+internal rclone component is missing, extract the full ZIP again and check
+whether antivirus software quarantined _internal\rclone.exe.
 
 Notes
 -----

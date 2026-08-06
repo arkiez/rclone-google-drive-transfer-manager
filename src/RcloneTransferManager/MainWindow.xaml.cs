@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using RcloneTransferManager.Models;
@@ -10,56 +11,78 @@ namespace RcloneTransferManager;
 
 public partial class MainWindow : Window
 {
+    private const string CloudSourcePrompt = "Paste a Google Drive or OneDrive file or folder link";
+    private const string CloudDestinationPrompt = "Paste a Google Drive or OneDrive folder link";
+    private const string LocalPrompt = "Enter a local folder path or click Browse";
+
     private readonly RcloneProcessRunner _runner = new();
     private readonly LogService _log = new();
-    private readonly JobStore _jobStore = new();
     private readonly RcloneConfigService _config;
     private readonly TransferService _transferService;
-    private List<TransferJob> _jobs = new();
-    private bool _loadingJob;
 
     public MainWindow()
     {
         InitializeComponent();
         _config = new RcloneConfigService(_runner, _log);
         _transferService = new TransferService(_runner, _config, _log);
-    }
-
-    private async void Window_Loaded(object sender, RoutedEventArgs e) => await LoadJobsAsync();
-
-    private async Task LoadJobsAsync()
-    {
-        try
-        {
-            _jobs = await _jobStore.LoadAsync();
-            SavedJobCombo.ItemsSource = null;
-            SavedJobCombo.ItemsSource = _jobs;
-            SavedJobCombo.DisplayMemberPath = nameof(TransferJob.Name);
-        }
-        catch (Exception ex) { ValidationText.Text = $"Could not load saved jobs: {ex.Message}"; }
-    }
-
-    private void RefreshJobs_Click(object sender, RoutedEventArgs e) => _ = LoadJobsAsync();
-
-    private void SavedJobCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loadingJob || SavedJobCombo.SelectedItem is not TransferJob job) return;
-        _loadingJob = true;
-        JobNameBox.Text = job.Name; SourceBox.Text = job.Source; DestinationBox.Text = job.Destination; CopyRadio.IsChecked = job.Mode == TransferMode.Copy; SyncRadio.IsChecked = job.Mode == TransferMode.Sync;
-        ValidationText.Text = $"Loaded '{job.Name}'. Review the locations, then start when ready.";
-        _loadingJob = false;
+        SourceCloudRadio.Checked += SourceLocationMode_Checked;
+        SourceLocalRadio.Checked += SourceLocationMode_Checked;
+        DestinationCloudRadio.Checked += DestinationLocationMode_Checked;
+        DestinationLocalRadio.Checked += DestinationLocationMode_Checked;
+        ConfigureLocationInput(SourceBox, SourcePlaceholder, BrowseSourceButton, SourceStatus, cloudMode: false, isSource: true, clearInput: false);
+        ConfigureLocationInput(DestinationBox, DestinationPlaceholder, BrowseDestinationButton, DestinationStatus, cloudMode: false, isSource: false, clearInput: false);
     }
 
     private void LocationBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        UpdateLocationStatus(SourceBox, SourceStatus);
-        UpdateLocationStatus(DestinationBox, DestinationStatus);
+        UpdateWatermark(SourceBox, SourcePlaceholder);
+        UpdateWatermark(DestinationBox, DestinationPlaceholder);
+        UpdateLocationStatus(SourceBox, SourceStatus, SourceCloudRadio.IsChecked == true, isSource: true);
+        UpdateLocationStatus(DestinationBox, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false);
     }
 
-    private void UpdateLocationStatus(System.Windows.Controls.TextBox box, TextBlock status)
+    private void SourceLocationMode_Checked(object sender, RoutedEventArgs e) =>
+        ConfigureLocationInput(SourceBox, SourcePlaceholder, BrowseSourceButton, SourceStatus, SourceCloudRadio.IsChecked == true, isSource: true, clearInput: true);
+
+    private void DestinationLocationMode_Checked(object sender, RoutedEventArgs e) =>
+        ConfigureLocationInput(DestinationBox, DestinationPlaceholder, BrowseDestinationButton, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false, clearInput: true);
+
+    private void ConfigureLocationInput(
+        System.Windows.Controls.TextBox box,
+        TextBlock placeholder,
+        Button browseButton,
+        TextBlock status,
+        bool cloudMode,
+        bool isSource,
+        bool clearInput)
+    {
+        if (clearInput) box.Clear();
+        var prompt = cloudMode
+            ? isSource ? CloudSourcePrompt : CloudDestinationPrompt
+            : LocalPrompt;
+        placeholder.Text = prompt;
+        browseButton.Visibility = cloudMode ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetName(box, $"{(isSource ? "Source" : "Destination")} {(cloudMode ? "cloud link" : "local folder")}");
+        AutomationProperties.SetHelpText(box, prompt);
+        box.ToolTip = prompt;
+        status.Text = string.Empty;
+        status.Foreground = (System.Windows.Media.Brush)FindResource("MutedBrush");
+        UpdateWatermark(box, placeholder);
+    }
+
+    private static void UpdateWatermark(System.Windows.Controls.TextBox box, TextBlock placeholder) =>
+        placeholder.Visibility = string.IsNullOrEmpty(box.Text) ? Visibility.Visible : Visibility.Collapsed;
+
+    private void UpdateLocationStatus(System.Windows.Controls.TextBox box, TextBlock status, bool cloudMode, bool isSource)
     {
         if (string.IsNullOrWhiteSpace(box.Text)) { status.Text = ""; status.Foreground = (System.Windows.Media.Brush)FindResource("MutedBrush"); return; }
         if (!LocationResolver.TryResolve(box.Text, out var location, out var error)) { status.Text = error; status.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush"); return; }
+        if (!MatchesSelectedLocationType(location!, cloudMode, isSource))
+        {
+            status.Text = GetLocationTypeError(isSource, cloudMode);
+            status.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush");
+            return;
+        }
         if (location!.IsPublicFile)
         {
             status.Text = "Public file - No login required";
@@ -67,8 +90,22 @@ public partial class MainWindow : Window
             return;
         }
         var connected = location!.IsCloud && _config.HasRemote(location.RemoteName);
-        status.Text = location.IsCloud ? $"{location.DisplayProvider} · {(connected ? "Connected" : "Login required")}" : "Local folder · Browse or paste a path";
+        status.Text = location.IsCloud ? $"{location.DisplayProvider} - {(connected ? "Connected" : "Login required")}" : "Local folder - Ready";
         status.Foreground = (System.Windows.Media.Brush)FindResource(connected || !location.IsCloud ? "SuccessBrush" : "WarningBrush");
+    }
+
+    private static bool MatchesSelectedLocationType(ResolvedLocation location, bool cloudMode, bool isSource) =>
+        cloudMode
+            ? location.IsCloud || (isSource && location.IsPublicFile)
+            : location.Kind == LocationKind.Local;
+
+    private static string GetLocationTypeError(bool isSource, bool cloudMode)
+    {
+        var label = isSource ? "Source" : "Destination";
+        if (!cloudMode) return $"{label} must be a local folder path when Local is selected.";
+        return isSource
+            ? "Source must be a supported cloud file or folder link when Cloud is selected."
+            : "Destination must be a supported cloud folder link when Cloud is selected.";
     }
 
     private void BrowseSource_Click(object sender, RoutedEventArgs e) => BrowseInto(SourceBox);
@@ -78,15 +115,6 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFolderDialog { Title = "Choose a local folder", Multiselect = false };
         if (dialog.ShowDialog() == true) target.Text = dialog.FolderName;
-    }
-
-    private async void SaveJob_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryBuildJob(out var job, out var error)) { ValidationText.Text = error; return; }
-        _jobs.Add(job!);
-        await _jobStore.SaveAsync(_jobs);
-        await LoadJobsAsync();
-        ValidationText.Text = $"Saved '{job!.Name}'.";
     }
 
     private async void StartTransfer_Click(object sender, RoutedEventArgs e)
@@ -113,8 +141,8 @@ public partial class MainWindow : Window
                 return;
             }
 
-            UpdateLocationStatus(SourceBox, SourceStatus);
-            UpdateLocationStatus(DestinationBox, DestinationStatus);
+            UpdateLocationStatus(SourceBox, SourceStatus, SourceCloudRadio.IsChecked == true, isSource: true);
+            UpdateLocationStatus(DestinationBox, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false);
             if (!_transferService.TryResolveJob(job!, out source, out destination, out error))
             {
                 ValidationText.Text = error;
@@ -148,10 +176,9 @@ public partial class MainWindow : Window
 
             var monitor = new TransferMonitorWindow(_transferService, new TransferRequest(job!, excluded)) { Owner = this };
             monitor.ShowDialog();
-            job!.LastRunUtc = DateTime.UtcNow;
-            job.LastRunStatus = monitor.WasSuccessful ? "Completed" : monitor.WasCancelled ? "Cancelled" : "Failed";
-            await _jobStore.SaveAsync(_jobs);
-            ValidationText.Text = $"{job.LastRunStatus}: {job.Name}";
+            ValidationText.Text = monitor.WasSuccessful
+                ? "Transfer completed."
+                : monitor.WasCancelled ? "Transfer cancelled." : "Transfer failed.";
         }
         catch (Exception ex) { _log.Write("Transfer", ex.ToString()); ShowFailure(ex.Message); }
         finally { IsEnabled = true; }
@@ -210,11 +237,27 @@ public partial class MainWindow : Window
     private bool TryBuildJob(out TransferJob? job, out string error)
     {
         job = null; error = string.Empty;
-        var name = JobNameBox.Text.Trim();
-        if (name.Length == 0) { error = "Enter a job name."; return false; }
-        if (string.IsNullOrWhiteSpace(SourceBox.Text) || string.IsNullOrWhiteSpace(DestinationBox.Text)) { error = "Enter both a source and destination."; return false; }
-        job = new TransferJob { Name = name, Source = SourceBox.Text.Trim(), Destination = DestinationBox.Text.Trim(), Mode = SyncRadio.IsChecked == true ? TransferMode.Sync : TransferMode.Copy };
+        var source = SourceBox.Text.Trim();
+        var destination = DestinationBox.Text.Trim();
+        if (source.Length == 0 || destination.Length == 0) { error = "Enter both a source and destination."; return false; }
+        if (!TryValidateSelectedLocation(source, SourceCloudRadio.IsChecked == true, isSource: true, out error)) return false;
+        if (!TryValidateSelectedLocation(destination, DestinationCloudRadio.IsChecked == true, isSource: false, out error)) return false;
+        job = new TransferJob
+        {
+            Name = $"Transfer {DateTime.Now:yyyyMMdd-HHmmss}",
+            Source = source,
+            Destination = destination,
+            Mode = SyncRadio.IsChecked == true ? TransferMode.Sync : TransferMode.Copy
+        };
         return true;
+    }
+
+    private static bool TryValidateSelectedLocation(string value, bool cloudMode, bool isSource, out string error)
+    {
+        if (!LocationResolver.TryResolve(value, out var location, out error)) return false;
+        if (MatchesSelectedLocationType(location!, cloudMode, isSource)) return true;
+        error = GetLocationTypeError(isSource, cloudMode);
+        return false;
     }
 
     private void Accounts_Click(object sender, RoutedEventArgs e) => new AccountsWindow(_config) { Owner = this }.ShowDialog();

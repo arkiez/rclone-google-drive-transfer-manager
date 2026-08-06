@@ -15,6 +15,7 @@ public partial class TransferMonitorWindow : Window
     private bool _cancelRequested;
     private bool _running;
     private bool _started;
+    private bool _completionPopupShown;
 
     public bool WasSuccessful { get; private set; }
     public bool WasCancelled { get; private set; }
@@ -24,7 +25,7 @@ public partial class TransferMonitorWindow : Window
         _service = service;
         _request = request;
         InitializeComponent();
-        JobText.Text = $"Job: {request.Job.Name}";
+        TransferNameText.Text = $"Transfer: {request.Job.Name}";
         RouteText.Text = $"{request.Job.Source}  →  {request.Job.Destination}";
         ModeText.Text = request.Job.Mode.ToString().ToUpperInvariant();
     }
@@ -163,6 +164,16 @@ public partial class TransferMonitorWindow : Window
                 line.Contains("Failed", StringComparison.OrdinalIgnoreCase)) ?? "Check the saved log for details.";
         }
         SetCompletedButtons();
+        if (WasSuccessful && !_completionPopupShown)
+        {
+            _completionPopupShown = true;
+            System.Windows.MessageBox.Show(
+                this,
+                "The transfer finished successfully.",
+                "Transfer completed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
     }
 
     private void Pause_Click(object sender, RoutedEventArgs e)

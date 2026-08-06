@@ -38,8 +38,8 @@ public sealed class TransferService
         if (source.IsPublicFile && destination.Kind != LocationKind.Local) { error = "Public direct file links can only be copied to a local folder."; return false; }
         if (source.IsPublicFile && job.Mode != TransferMode.Copy) { error = "Public direct file links support Copy only; Sync requires a folder source."; return false; }
         if (source.IsPublicFile && string.IsNullOrWhiteSpace(source.DirectUrl)) { error = "This public file link does not contain a usable download URL."; return false; }
-        if (requireConnections && source.IsCloud && !_config.HasRemote(source.RemoteName)) { error = $"Connect {source.DisplayProvider} before starting this job."; return false; }
-        if (requireConnections && destination.IsCloud && !_config.HasRemote(destination.RemoteName)) { error = $"Connect {destination.DisplayProvider} before starting this job."; return false; }
+        if (requireConnections && source.IsCloud && !_config.HasRemote(source.RemoteName)) { error = $"Connect {source.DisplayProvider} before starting this transfer."; return false; }
+        if (requireConnections && destination.IsCloud && !_config.HasRemote(destination.RemoteName)) { error = $"Connect {destination.DisplayProvider} before starting this transfer."; return false; }
         if (source.Kind == LocationKind.Local && !Directory.Exists(source.Path)) { error = "The local source folder does not exist."; return false; }
         if (createDestinationDirectory && destination.Kind == LocationKind.Local) Directory.CreateDirectory(destination.Path);
         return true;
@@ -73,7 +73,7 @@ public sealed class TransferService
     public async Task<RcloneRunResult> RunAsync(TransferRequest request, Action<ProgressInfo>? onProgress, Action<string>? onLine, CancellationToken cancellationToken = default)
     {
         if (!TryResolveJob(request.Job, out var source, out var destination, out var error)) throw new InvalidOperationException(error);
-        var logPath = _log.CreateJobLog(request.Job.Name, GetRcloneVersion());
+        var logPath = _log.CreateTransferLog(request.Job.Name, GetRcloneVersion());
         void Capture(string line)
         {
             _log.WriteFile(logPath, line);

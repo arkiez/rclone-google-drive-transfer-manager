@@ -18,12 +18,12 @@
                            Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/>
             </StackPanel>
         </StackPanel>
-        <Border Grid.Row="1" Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
+        <Border Grid.Row="1" Background="{StaticResource NeutralSurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                 CornerRadius="7" Padding="11" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal">
                 <Path Data="{StaticResource InfoIcon}" Fill="{StaticResource PrimaryBrush}"
                       Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
-                <TextBlock x:Name="SummaryText" Foreground="#1E3A8A" FontSize="11" TextWrapping="Wrap"/>
+                <TextBlock x:Name="SummaryText" Foreground="{StaticResource ForegroundBrush}" FontSize="11" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
         <DataGrid x:Name="ConflictsGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"

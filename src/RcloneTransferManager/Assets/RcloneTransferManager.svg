@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">Rclone Transfer Manager RT monogram</title>
+  <desc id="description">White geometric RT letters on a near-black rounded square.</desc>
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="#111111"/>
+  <path d="M32 94V34H52C67 34 74 42 74 55C74 68 67 76 52 76H32M53 76L72 94"
+        fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="square" stroke-linejoin="round"/>
+  <path d="M82 40H106M94 40V94"
+        fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="square" stroke-linejoin="round"/>
+</svg>

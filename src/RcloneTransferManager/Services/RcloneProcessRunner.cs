@@ -11,7 +11,7 @@ public sealed class RcloneProcessRunner
 
     public async Task<RcloneRunResult> RunAsync(IReadOnlyList<string> arguments, string configPath, Action<string>? onLine, CancellationToken cancellationToken)
     {
-        if (!File.Exists(AppPaths.RcloneExecutable)) throw new FileNotFoundException("The bundled rclone.exe was not found.", AppPaths.RcloneExecutable);
+        AppPaths.EnsureRcloneAvailable();
 
         var startInfo = new ProcessStartInfo(AppPaths.RcloneExecutable)
         {

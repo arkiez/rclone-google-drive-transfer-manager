@@ -4,21 +4,26 @@
              StartupUri="MainWindow.xaml"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB" />
-        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#1D4ED8" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#171717" />
+        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#000000" />
         <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="BackgroundBrush" Color="#F8FAFC" />
-        <SolidColorBrush x:Key="ForegroundBrush" Color="#0F172A" />
-        <SolidColorBrush x:Key="MutedBrush" Color="#64748B" />
-        <SolidColorBrush x:Key="BorderBrush" Color="#E4ECFC" />
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#F5F5F5" />
+        <SolidColorBrush x:Key="ForegroundBrush" Color="#171717" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#616161" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#C7C7C7" />
+        <SolidColorBrush x:Key="NeutralSurfaceBrush" Color="#F1F1F1" />
+        <SolidColorBrush x:Key="NeutralHoverBrush" Color="#E5E5E5" />
+        <SolidColorBrush x:Key="FocusBrush" Color="#525252" />
         <SolidColorBrush x:Key="WarningBrush" Color="#D97706" />
+        <SolidColorBrush x:Key="WarningSurfaceBrush" Color="#FFF7ED" />
+        <SolidColorBrush x:Key="WarningBorderBrush" Color="#FDBA74" />
+        <SolidColorBrush x:Key="WarningTextBrush" Color="#9A3412" />
         <SolidColorBrush x:Key="DangerBrush" Color="#DC2626" />
         <SolidColorBrush x:Key="SuccessBrush" Color="#15803D" />
         <Geometry x:Key="CloudIcon">M4,16H15.5A3.5,3.5 0 0 0 16,9A5,5 0 0 0 6.3,8A3.8,3.8 0 0 0 4,16Z</Geometry>
         <Geometry x:Key="InfoIcon">M10,1A9,9 0 1 0 10,19A9,9 0 1 0 10,1M9,8H11V16H9V8M9,4H11V6H9V4Z</Geometry>
         <Geometry x:Key="RefreshIcon">M17,4V8H13L15,6A6.5,6.5 0 0 0 4.5,8.5L3,7A8.5,8.5 0 0 1 17,4M3,16V12H7L5,14A6.5,6.5 0 0 0 15.5,11.5L17,13A8.5,8.5 0 0 1 3,16Z</Geometry>
         <Geometry x:Key="FolderIcon">M2,4H8L10,6H18V17H2Z</Geometry>
-        <Geometry x:Key="SaveIcon">M3,2H15L18,5V18H3Z M6,3V8H14V3Z M6,12H15V17H6Z</Geometry>
         <Geometry x:Key="PlayIcon">M6,3L17,10L6,17Z</Geometry>
         <Geometry x:Key="CopyIcon">M5,5H16V17H5Z M2,2H13V4H4V13H2Z</Geometry>
         <Geometry x:Key="SyncIcon">M4,7H14L11,4L12,3L18,9L12,15L11,14L14,11H4Z M16,13H6L9,16L8,17L2,11L8,5L9,6L6,9H16Z</Geometry>
@@ -45,6 +50,7 @@
             <Setter Property="FontFamily" Value="Segoe UI" />
             <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
             <Setter Property="Background" Value="{StaticResource BackgroundBrush}" />
+            <Setter Property="Icon" Value="pack://application:,,,/Assets/RcloneTransferManager.ico" />
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
@@ -67,24 +73,123 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" /></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="#0F172A" /><Setter Property="BorderThickness" Value="2" /></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /><Setter Property="BorderThickness" Value="2" /></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5" /><Setter Property="Cursor" Value="Arrow" /></Trigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-            <Setter Property="Background" Value="White" /><Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" /><Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" /><Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" /><Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{StaticResource NeutralHoverBrush}" /><Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" /></Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
             <Setter Property="Background" Value="{StaticResource DangerBrush}" /><Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
         </Style>
         <Style TargetType="TextBox">
-            <Setter Property="Padding" Value="9,7" /><Setter Property="BorderBrush" Value="#CBD5E1" /><Setter Property="BorderThickness" Value="1" /><Setter Property="FontSize" Value="13" /><Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="9,7" /><Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="FontSize" Value="13" /><Setter Property="MinHeight" Value="36" />
+            <Style.Triggers>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /><Setter Property="BorderThickness" Value="2" /></Trigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="ComboBox">
-            <Setter Property="Padding" Value="8,6" /><Setter Property="BorderBrush" Value="#CBD5E1" /><Setter Property="FontSize" Value="13" /><Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="8,6" /><Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" /><Setter Property="FontSize" Value="13" /><Setter Property="MinHeight" Value="36" />
+            <Style.Triggers>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /><Setter Property="BorderThickness" Value="2" /></Trigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="RadioButton">
             <Setter Property="Margin" Value="0,0,4,0" /><Setter Property="Padding" Value="10,5" /><Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style x:Key="SegmentedRadioButton" TargetType="RadioButton">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="SegmentBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="False" />
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="SegmentBorder" Property="Background" Value="{StaticResource NeutralHoverBrush}" />
+                            </MultiTrigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="SegmentBorder" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="SegmentBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="SegmentBorder" Property="BorderBrush" Value="{StaticResource FocusBrush}" />
+                                <Setter TargetName="SegmentBorder" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="SegmentBorder" Property="Opacity" Value="0.5" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="WatermarkTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="10,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <Style TargetType="ProgressBar">
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Background" Value="{StaticResource NeutralHoverBrush}" />
+        </Style>
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+            <Setter Property="RowBackground" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="AlternatingRowBackground" Value="{StaticResource NeutralSurfaceBrush}" />
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource NeutralHoverBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource NeutralHoverBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                    <Setter Property="Foreground" Value="White" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Application.Resources>
 </Application>

@@ -14,6 +14,7 @@
     <Company>Arkie'z K. Khositkhanawut</Company>
     <Product>Rclone Transfer Manager</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\RcloneTransferManager.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System"/>
@@ -24,6 +25,10 @@
     <Using Include="System.Threading.Tasks"/>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\rclone.exe" Link="rclone.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+    <None Include="..\..\rclone.exe" Link="_internal\rclone.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\RcloneTransferManager.ico" />
+    <None Update="Assets\RcloneTransferManager.svg" />
   </ItemGroup>
 </Project>

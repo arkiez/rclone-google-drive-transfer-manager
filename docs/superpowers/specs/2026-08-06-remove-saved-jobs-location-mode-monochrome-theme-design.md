@@ -1,7 +1,7 @@
 # Remove Saved Jobs, Add Location Modes, and Adopt a Monochrome Theme
 
 Date: 2026-08-06
-Status: Approved design; pending implementation
+Status: Implemented and verified
 
 ## 1. Context
 
