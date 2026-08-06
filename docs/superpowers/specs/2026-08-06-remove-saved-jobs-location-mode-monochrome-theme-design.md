@@ -26,6 +26,7 @@ semantic colors reserved for status communication.
 - Validate entered locations against their selected types before transfer.
 - Apply a monochrome theme across every application window while retaining
   green, orange, and red for success, warning, and error states.
+- Show one completion popup immediately after each successful transfer.
 
 ## 3. Non-goals
 
@@ -131,7 +132,22 @@ Transfer Monitor windows. Existing green, orange, and red resources remain
 only for success, warning, and error meaning. Information-only notices use a
 neutral treatment.
 
-## 9. Components affected
+## 9. Successful-transfer popup
+
+After rclone exits with code `0` and the transfer was not cancelled, the
+Transfer Monitor shows an owner-bound modal message box immediately. Its title
+is `Transfer completed`, its message is `The transfer finished successfully.`,
+and it uses the Information icon with an OK button.
+
+The popup appears exactly once per transfer, including a transfer that was
+paused and resumed. Dismissing it leaves the completed Transfer Monitor open so
+the user can inspect the result and activity log before choosing Close.
+
+Failed and cancelled transfers do not show the success popup. They continue to
+use the monitor's existing failure or cancellation state. This design does not
+add a Windows toast dependency or a background notification service.
+
+## 10. Components affected
 
 - `MainWindow.xaml`: remove job controls; add selectors, watermarks, and revised
   layout.
@@ -142,14 +158,15 @@ neutral treatment.
 - `App.xaml.cs` and `AppPaths.cs`: perform targeted legacy-file cleanup.
 - `TransferModels.cs`: retain `TransferJob` but remove persistence-only metadata
   when it has no remaining consumer.
-- `TransferMonitorWindow`: use transfer wording for the generated run name.
+- `TransferMonitorWindow`: use transfer wording for the generated run name and
+  show the owner-bound success popup once after successful completion.
 - Other window XAML files: replace blue information styling with neutral theme
   resources while preserving semantic status colors.
 - `JobStore.cs`: delete the unused persistence service.
 - User documentation: remove saved-job instructions and the `jobs.json` data
   entry; document Cloud and Local selection.
 
-## 10. Error handling
+## 11. Error handling
 
 - Empty inputs and selected-type mismatches are shown in the existing main
   validation area and prevent Start.
@@ -158,8 +175,9 @@ neutral treatment.
 - A failure to delete the legacy jobs file is non-fatal but visible and logged.
 - Clearing an input after a location-type change also clears stale validation
   status for that input.
+- Failed and cancelled transfers never show a misleading success popup.
 
-## 11. Verification
+## 12. Verification
 
 Implementation is complete when all of the following pass:
 
@@ -178,8 +196,11 @@ Implementation is complete when all of the following pass:
    for consistent monochrome styling, visible focus, and semantic status colors.
 9. Confirm a transfer can start without a user-entered name and that monitor
    and log output use the generated transfer name.
+10. Confirm a successful transfer shows the approved popup exactly once and
+    that dismissing it leaves the completed monitor open.
+11. Confirm failed and cancelled transfers do not show the success popup.
 
-## 12. Acceptance criteria
+## 13. Acceptance criteria
 
 - No saved-job or job-name control remains in the main workflow.
 - No transfer setup is read from or written to `jobs.json`.
@@ -188,4 +209,6 @@ Implementation is complete when all of the following pass:
 - Each selection has the approved placeholder, Browse behavior, and strict
   type validation.
 - All application windows use the approved monochrome base theme.
+- Every successful transfer shows one immediate, owner-bound completion popup;
+  failed and cancelled transfers do not.
 - Copy and Sync safety behavior remains unchanged.
