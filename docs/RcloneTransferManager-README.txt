@@ -1,4 +1,4 @@
-Rclone Transfer Manager v1.1.0
+Rclone Transfer Manager v1.1.1
 Created by Arkie'z K. Khositkhanawut
 
 Rclone Transfer Manager is a portable Windows x64 desktop utility for copying
@@ -60,5 +60,5 @@ Notes
 Release
 -------
 Product: Rclone Transfer Manager
-Version: 1.1.0
+Version: 1.1.1
 Creator: Arkie'z K. Khositkhanawut

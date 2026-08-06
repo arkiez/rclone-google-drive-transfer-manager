@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root "src\RcloneTransferManager\RcloneTransferManager.csproj"
 $publish = Join-Path $root "dist\RcloneTransferManager"
-$zip = Join-Path $root "RcloneTransferManager-v1.1.0-win-x64.zip"
+$zip = Join-Path $root "RcloneTransferManager-v1.1.1-win-x64.zip"
 $readme = Join-Path $root "docs\RcloneTransferManager-README.txt"
 
 if (-not (Test-Path -LiteralPath $project)) { throw "Project not found: $project" }

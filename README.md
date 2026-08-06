@@ -3,7 +3,7 @@
 Portable Windows x64 GUI for copying and synchronizing local folders,
 Google Drive, and OneDrive through rclone.
 
-Version: 1.1.0
+Version: 1.1.1
 Creator: Arkie'z K. Khositkhanawut
 
 ## Highlights
@@ -22,7 +22,7 @@ Use the .NET 8 Windows Desktop SDK:
     .\scripts\package.ps1
 
 The release package is created as
-RcloneTransferManager-v1.1.0-win-x64.zip.
+RcloneTransferManager-v1.1.1-win-x64.zip.
 
 Runtime credentials are stored in the local data folder and are intentionally
 ignored by Git. Never commit a populated data or logs folder.

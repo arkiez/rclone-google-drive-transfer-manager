@@ -12,6 +12,7 @@ $source = Join-Path $testRoot "source"
 $destination = Join-Path $testRoot "destination"
 $config = Join-Path $testRoot "empty.conf"
 New-Item -ItemType Directory -Path $source, $destination -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $source "empty-child") -Force | Out-Null
 Set-Content -LiteralPath $config -Value "" -Encoding UTF8
 Set-Content -LiteralPath (Join-Path $source "hello.txt") -Value "hello from rclone transfer manager" -Encoding UTF8
 
@@ -20,10 +21,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "rclone version failed." }
     Write-Host ($version | Select-Object -First 1)
 
-    & $RclonePath --config $config copy $source $destination --stats-one-line --log-level ERROR
+    & $RclonePath --config $config copy $source $destination --create-empty-src-dirs --stats-one-line --log-level ERROR
     if ($LASTEXITCODE -ne 0) { throw "Local Copy smoke test failed." }
     $copied = Join-Path $destination "hello.txt"
     if (-not (Test-Path -LiteralPath $copied)) { throw "Copy did not create hello.txt." }
+    if (-not (Test-Path -LiteralPath (Join-Path $destination "empty-child") -PathType Container)) { throw "Copy did not create the empty source directory." }
 
     Set-Content -LiteralPath (Join-Path $source "hello.txt") -Value "updated by sync" -Encoding UTF8
     & $RclonePath --config $config sync $source $destination --stats-one-line --log-level ERROR

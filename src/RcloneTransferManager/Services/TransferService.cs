@@ -174,6 +174,7 @@ public sealed class TransferService
     {
         var command = mode == TransferMode.Copy ? "copy" : "sync";
         var args = new List<string> { command, ToSpec(source, prepared.SourceRemote), ToSpec(destination, prepared.DestinationRemote), "--stats", "1s", "--stats-one-line", "--stats-one-line-date", "--stats-log-level", "NOTICE", "--log-level", "INFO", "--retries", "2", "--low-level-retries", "5" };
+        if (mode == TransferMode.Copy) args.Add("--create-empty-src-dirs");
         if (dryRun)
         {
             args.Add("--dry-run");

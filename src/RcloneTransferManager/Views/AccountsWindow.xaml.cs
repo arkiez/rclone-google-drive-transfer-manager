@@ -45,8 +45,8 @@ public partial class AccountsWindow : Window
         {
             GoogleStatus.Text = "Checking connection...";
             OneDriveStatus.Text = "Checking connection...";
-            var googleTask = _config.IsConnectedAsync(LocationKind.GoogleDrive, _windowCts.Token);
-            var oneDriveTask = _config.IsConnectedAsync(LocationKind.OneDrive, _windowCts.Token);
+            var googleTask = _config.IsConnectedAsync(LocationKind.GoogleDrive, _windowCts.Token, forceRefresh: true);
+            var oneDriveTask = _config.IsConnectedAsync(LocationKind.OneDrive, _windowCts.Token, forceRefresh: true);
             var states = await Task.WhenAll(googleTask, oneDriveTask);
             _googleConnected = states[0];
             _oneDriveConnected = states[1];
