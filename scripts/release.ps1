@@ -15,8 +15,12 @@ if (-not (Test-Path -LiteralPath $zip)) { & (Join-Path $PSScriptRoot "package.ps
 if (-not (Test-Path -LiteralPath $zip)) { throw "Release package is missing: $zip" }
 & (Join-Path $PSScriptRoot "version-test.ps1") -ExpectedVersion $version -ZipPath $zip
 if ($LASTEXITCODE -ne 0) { throw "Version verification failed." }
+$previousPreference = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
 gh release view $tag --repo $repo *> $null
-if ($LASTEXITCODE -eq 0) {
+$releaseExists = $LASTEXITCODE -eq 0
+$ErrorActionPreference = $previousPreference
+if ($releaseExists) {
     gh release upload $tag $zip --repo $repo --clobber
 } elseif ([string]::IsNullOrWhiteSpace($Notes)) {
     gh release create $tag $zip --repo $repo --target main --title "Rclone Transfer Manager $tag" --generate-notes
