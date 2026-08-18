@@ -11,14 +11,15 @@ namespace RcloneTransferManager;
 
 public partial class MainWindow : Window
 {
-    private const string CloudSourcePrompt = "Paste a Google Drive or OneDrive file or folder link";
-    private const string CloudDestinationPrompt = "Paste a Google Drive or OneDrive folder link";
+    private const string CloudSourcePrompt = "Paste a Google Drive file or folder link, or a public direct file link";
+    private const string CloudDestinationPrompt = "Paste a Google Drive folder link";
     private const string LocalPrompt = "Enter a local folder path or click Browse";
 
     private readonly RcloneProcessRunner _runner = new();
     private readonly LogService _log = new();
     private readonly RcloneConfigService _config;
     private readonly TransferService _transferService;
+    private readonly UpdateService _updateService = new();
 
     public MainWindow()
     {
@@ -27,24 +28,34 @@ public partial class MainWindow : Window
         VersionText.Text = $"v{AppInfo.Version}  |  {AppInfo.Creator}";
         _config = new RcloneConfigService(_runner, _log);
         _transferService = new TransferService(_runner, _config, _log);
-        SourceCloudRadio.Checked += SourceLocationMode_Checked;
-        SourceLocalRadio.Checked += SourceLocationMode_Checked;
         DestinationCloudRadio.Checked += DestinationLocationMode_Checked;
         DestinationLocalRadio.Checked += DestinationLocationMode_Checked;
-        ConfigureLocationInput(SourceBox, SourcePlaceholder, BrowseSourceButton, SourceStatus, cloudMode: false, isSource: true, clearInput: false);
+        ConfigureLocationInput(SourceBox, SourcePlaceholder, null, SourceStatus, cloudMode: true, isSource: true, clearInput: false);
         ConfigureLocationInput(DestinationBox, DestinationPlaceholder, BrowseDestinationButton, DestinationStatus, cloudMode: false, isSource: false, clearInput: false);
+        Loaded += async (_, _) => await CheckForUpdatesOnStartupAsync();
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            var update = await _updateService.CheckLatestAsync(force: false);
+            if (update is not null)
+                new UpdateWindow(_updateService, update) { Owner = this }.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            _log.Write("Update", ex.Message);
+        }
     }
 
     private void LocationBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         UpdateWatermark(SourceBox, SourcePlaceholder);
         UpdateWatermark(DestinationBox, DestinationPlaceholder);
-        UpdateLocationStatus(SourceBox, SourceStatus, SourceCloudRadio.IsChecked == true, isSource: true);
+        UpdateLocationStatus(SourceBox, SourceStatus, cloudMode: true, isSource: true);
         UpdateLocationStatus(DestinationBox, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false);
     }
-
-    private void SourceLocationMode_Checked(object sender, RoutedEventArgs e) =>
-        ConfigureLocationInput(SourceBox, SourcePlaceholder, BrowseSourceButton, SourceStatus, SourceCloudRadio.IsChecked == true, isSource: true, clearInput: true);
 
     private void DestinationLocationMode_Checked(object sender, RoutedEventArgs e) =>
         ConfigureLocationInput(DestinationBox, DestinationPlaceholder, BrowseDestinationButton, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false, clearInput: true);
@@ -52,7 +63,7 @@ public partial class MainWindow : Window
     private void ConfigureLocationInput(
         System.Windows.Controls.TextBox box,
         TextBlock placeholder,
-        Button browseButton,
+        Button? browseButton,
         TextBlock status,
         bool cloudMode,
         bool isSource,
@@ -63,7 +74,7 @@ public partial class MainWindow : Window
             ? isSource ? CloudSourcePrompt : CloudDestinationPrompt
             : LocalPrompt;
         placeholder.Text = prompt;
-        browseButton.Visibility = cloudMode ? Visibility.Collapsed : Visibility.Visible;
+        if (browseButton is not null) browseButton.Visibility = cloudMode ? Visibility.Collapsed : Visibility.Visible;
         AutomationProperties.SetName(box, $"{(isSource ? "Source" : "Destination")} {(cloudMode ? "cloud link" : "local folder")}");
         AutomationProperties.SetHelpText(box, prompt);
         box.ToolTip = prompt;
@@ -103,14 +114,12 @@ public partial class MainWindow : Window
 
     private static string GetLocationTypeError(bool isSource, bool cloudMode)
     {
-        var label = isSource ? "Source" : "Destination";
-        if (!cloudMode) return $"{label} must be a local folder path when Local is selected.";
-        return isSource
-            ? "Source must be a supported cloud file or folder link when Cloud is selected."
-            : "Destination must be a supported cloud folder link when Cloud is selected.";
+        if (isSource) return "Source must be a supported Google Drive file/folder link or public direct file link.";
+        return cloudMode
+            ? "Destination must be a supported cloud folder link when Cloud is selected."
+            : "Destination must be a local folder path when Local is selected.";
     }
 
-    private void BrowseSource_Click(object sender, RoutedEventArgs e) => BrowseInto(SourceBox);
     private void BrowseDestination_Click(object sender, RoutedEventArgs e) => BrowseInto(DestinationBox);
 
     private static void BrowseInto(System.Windows.Controls.TextBox target)
@@ -143,7 +152,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            UpdateLocationStatus(SourceBox, SourceStatus, SourceCloudRadio.IsChecked == true, isSource: true);
+            UpdateLocationStatus(SourceBox, SourceStatus, cloudMode: true, isSource: true);
             UpdateLocationStatus(DestinationBox, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false);
             if (!_transferService.TryResolveJob(job!, out source, out destination, out error))
             {
@@ -153,21 +162,13 @@ public partial class MainWindow : Window
             }
 
             IReadOnlyCollection<string> excluded = Array.Empty<string>();
-            if (job!.Mode == TransferMode.Sync)
-            {
-                ValidationText.Text = "Preparing Sync preview...";
-                var preview = await _transferService.PreviewAsync(job, line => Dispatcher.Invoke(() => ValidationText.Text = line));
-                if (!preview.Succeeded) { ShowFailure(preview.Error ?? "Could not prepare Sync preview."); return; }
-                var previewWindow = new SyncPreviewWindow(preview.Changes, preview.Lines) { Owner = this };
-                if (previewWindow.ShowDialog() != true) { ValidationText.Text = "Sync cancelled before any changes were applied."; return; }
-            }
-            else if (source!.IsPublicFile)
+            if (source!.IsPublicFile)
             {
                 ValidationText.Text = "Preparing public file download...";
             }
             else
             {
-                var conflicts = await _transferService.FindCopyConflictsAsync(job);
+                var conflicts = await _transferService.FindCopyConflictsAsync(job!);
                 if (conflicts.Count > 0)
                 {
                     var conflictWindow = new ConflictWindow(conflicts) { Owner = this };
@@ -232,7 +233,6 @@ public partial class MainWindow : Window
     private static string ProviderName(LocationKind kind) => kind switch
     {
         LocationKind.GoogleDrive => "Google Drive",
-        LocationKind.OneDrive => "OneDrive",
         _ => "the cloud provider"
     };
 
@@ -242,14 +242,14 @@ public partial class MainWindow : Window
         var source = SourceBox.Text.Trim();
         var destination = DestinationBox.Text.Trim();
         if (source.Length == 0 || destination.Length == 0) { error = "Enter both a source and destination."; return false; }
-        if (!TryValidateSelectedLocation(source, SourceCloudRadio.IsChecked == true, isSource: true, out error)) return false;
+        if (!TryValidateSelectedLocation(source, cloudMode: true, isSource: true, out error)) return false;
         if (!TryValidateSelectedLocation(destination, DestinationCloudRadio.IsChecked == true, isSource: false, out error)) return false;
         job = new TransferJob
         {
             Name = $"Transfer {DateTime.Now:yyyyMMdd-HHmmss}",
             Source = source,
             Destination = destination,
-            Mode = SyncRadio.IsChecked == true ? TransferMode.Sync : TransferMode.Copy
+            Mode = TransferMode.Copy
         };
         return true;
     }
@@ -264,12 +264,8 @@ public partial class MainWindow : Window
 
     private void Accounts_Click(object sender, RoutedEventArgs e) => new AccountsWindow(_config) { Owner = this }.ShowDialog();
 
-    private void About_Click(object sender, RoutedEventArgs e)
-    {
-        var rclone = "bundled rclone";
-        try { rclone = FileVersionInfo.GetVersionInfo(AppPaths.RcloneExecutable).FileVersion ?? rclone; } catch { }
-        System.Windows.MessageBox.Show($"{AppInfo.Name} v{AppInfo.Version}\n\nCreated by {AppInfo.Creator}\nEngine: rclone {rclone}\n\nPortable Windows transfer utility.", "About", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
+    private void About_Click(object sender, RoutedEventArgs e) =>
+        new AboutWindow(_updateService) { Owner = this }.ShowDialog();
 
     private void ShowFailure(string message) => System.Windows.MessageBox.Show(message, "Transfer Manager", MessageBoxButton.OK, MessageBoxImage.Error);
 }

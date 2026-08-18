@@ -1,5 +1,5 @@
 param(
-    [string]$ExpectedVersion = "1.2.0",
+    [string]$ExpectedVersion = "2.2.0",
     [string]$BuildExe = "",
     [string]$PackageRoot = "",
     [string]$ZipPath = "",
@@ -81,6 +81,9 @@ if (-not [string]::IsNullOrWhiteSpace($PackageRoot)) {
     }
     if (-not (Test-Path -LiteralPath (Join-Path $PackageRoot "_internal\rclone.exe") -PathType Leaf)) {
         throw "Internal rclone backend is missing."
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $PackageRoot "_internal\RcloneTransferManager.Updater.exe") -PathType Leaf)) {
+        throw "Internal updater is missing."
     }
 }
 

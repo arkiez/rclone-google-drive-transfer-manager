@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\Version.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\RcloneTransferManager\Services\UpdateService.cs" Link="UpdateService.cs" />
+    <Compile Include="..\..\src\RcloneTransferManager\Services\AppPaths.cs" Link="AppPaths.cs" />
+    <Compile Include="..\..\src\RcloneTransferManager\Services\LogService.cs" Link="LogService.cs" />
+  </ItemGroup>
+</Project>

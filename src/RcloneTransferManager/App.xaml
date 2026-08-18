@@ -26,7 +26,6 @@
         <Geometry x:Key="FolderIcon">M2,4H8L10,6H18V17H2Z</Geometry>
         <Geometry x:Key="PlayIcon">M6,3L17,10L6,17Z</Geometry>
         <Geometry x:Key="CopyIcon">M5,5H16V17H5Z M2,2H13V4H4V13H2Z</Geometry>
-        <Geometry x:Key="SyncIcon">M4,7H14L11,4L12,3L18,9L12,15L11,14L14,11H4Z M16,13H6L9,16L8,17L2,11L8,5L9,6L6,9H16Z</Geometry>
         <Geometry x:Key="WarningIcon">M10,2L19,18H1Z M9,8H11V13H9Z M9,14H11V16H9Z</Geometry>
         <Geometry x:Key="PauseIcon">M5,3H8V17H5Z M12,3H15V17H12Z</Geometry>
         <Geometry x:Key="CancelIcon">M3,5L5,3L10,8L15,3L17,5L12,10L17,15L15,17L10,12L5,17L3,15L8,10Z</Geometry>
@@ -73,7 +72,7 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" /></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /><Setter Property="BorderThickness" Value="2" /></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5" /><Setter Property="Cursor" Value="Arrow" /></Trigger>
             </Style.Triggers>
         </Style>
@@ -89,13 +88,13 @@
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="9,7" /><Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="FontSize" Value="13" /><Setter Property="MinHeight" Value="36" />
             <Style.Triggers>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /><Setter Property="BorderThickness" Value="2" /></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /></Trigger>
             </Style.Triggers>
         </Style>
         <Style TargetType="ComboBox">
             <Setter Property="Padding" Value="8,6" /><Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" /><Setter Property="FontSize" Value="13" /><Setter Property="MinHeight" Value="36" />
             <Style.Triggers>
-                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /><Setter Property="BorderThickness" Value="2" /></Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{StaticResource FocusBrush}" /></Trigger>
             </Style.Triggers>
         </Style>
         <Style TargetType="RadioButton">
@@ -138,7 +137,6 @@
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="SegmentBorder" Property="BorderBrush" Value="{StaticResource FocusBrush}" />
-                                <Setter TargetName="SegmentBorder" Property="BorderThickness" Value="2" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="SegmentBorder" Property="Opacity" Value="0.5" />

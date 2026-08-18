@@ -16,7 +16,7 @@ public static class LocationResolver
         if (LooksLikeLocalPath(value)) { location = new(LocationKind.Local, value, string.Empty, value, null); return true; }
         if (TryResolveRclonePath(value, out location)) return true;
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
-        { error = "Use a Google Drive/OneDrive folder link or a valid local folder path."; return false; }
+        { error = "Use a Google Drive folder link or a valid local folder path."; return false; }
 
         var host = uri.Host.ToLowerInvariant();
         if (TryResolvePublicFile(value, uri, out location)) return true;
@@ -27,13 +27,7 @@ public static class LocationResolver
             if (string.IsNullOrWhiteSpace(id)) { error = "This Google Drive link does not contain a recognizable folder ID."; return false; }
             location = new(LocationKind.GoogleDrive, value, "google", string.Empty, Uri.UnescapeDataString(id)); return true;
         }
-        if (host.Contains("1drv.ms") || host.Contains("onedrive.live.com") || host.Contains("sharepoint.com"))
-        {
-            var id = Query(uri, "resid") ?? Query(uri, "id") ?? uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-            if (string.IsNullOrWhiteSpace(id)) { error = "This OneDrive link does not contain a recognizable folder ID."; return false; }
-            location = new(LocationKind.OneDrive, value, "onedrive", string.Empty, Uri.UnescapeDataString(id)); return true;
-        }
-        error = "Only Google Drive and OneDrive links are supported."; return false;
+        error = "Only Google Drive links are supported."; return false;
     }
 
     private static bool TryResolvePublicFile(string value, Uri uri, out ResolvedLocation? location)
@@ -71,16 +65,6 @@ public static class LocationResolver
             return true;
         }
 
-        var isOneDriveHost = host.Contains("1drv.ms")
-            || host.Contains("onedrive.live.com")
-            || host.Contains("sharepoint.com");
-        var isDirectOneDriveHost = host.EndsWith(".files.1drv.com", StringComparison.OrdinalIgnoreCase);
-        var hasExplicitDownload = string.Equals(Query(uri, "download"), "1", StringComparison.OrdinalIgnoreCase);
-        if (isDirectOneDriveHost || (isOneDriveHost && hasExplicitDownload))
-        {
-            location = new(LocationKind.PublicFile, value, string.Empty, string.Empty, null, value);
-            return true;
-        }
 
         return false;
     }
@@ -93,8 +77,8 @@ public static class LocationResolver
             return false;
         var colon = value.IndexOf(':'); if (colon <= 0) return false;
         var prefix = value[..colon].ToLowerInvariant(); var path = value[(colon + 1)..].TrimStart('/', '\\');
-        var kind = prefix switch { "gdrive" or "google" => LocationKind.GoogleDrive, "onedrive" or "one" => LocationKind.OneDrive, _ => LocationKind.Remote };
-        var remote = kind switch { LocationKind.GoogleDrive => "google", LocationKind.OneDrive => "onedrive", _ => value[..colon] };
+        var kind = prefix switch { "gdrive" or "google" => LocationKind.GoogleDrive, _ => LocationKind.Remote };
+        var remote = kind == LocationKind.GoogleDrive ? "google" : value[..colon];
         location = new(kind, value, remote, path, null); return true;
     }
 

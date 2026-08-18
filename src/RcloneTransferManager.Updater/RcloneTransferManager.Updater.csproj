@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\Version.props" />
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RcloneTransferManager.Updater</AssemblyName>
+    <RootNamespace>RcloneTransferManager.Updater</RootNamespace>
+    <Product>Rclone Transfer Manager Updater</Product>
+    <Company>Arkie'z K. Khositkhanawut</Company>
+  </PropertyGroup>
+</Project>

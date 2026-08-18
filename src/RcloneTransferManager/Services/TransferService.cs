@@ -17,9 +17,15 @@ public sealed class TransferService
     private readonly RcloneProcessRunner _runner;
     private readonly RcloneConfigService _config;
     private readonly LogService _log;
+    private readonly GoogleDriveFolderNameService _googleFolderNames;
 
     public TransferService(RcloneProcessRunner runner, RcloneConfigService config, LogService log)
-    { _runner = runner; _config = config; _log = log; }
+    {
+        _runner = runner;
+        _config = config;
+        _log = log;
+        _googleFolderNames = new GoogleDriveFolderNameService(runner);
+    }
 
     public bool TryResolveJob(
         TransferJob job,
@@ -36,7 +42,6 @@ public sealed class TransferService
         if (source.Original.Equals(destination.Original, StringComparison.OrdinalIgnoreCase)) { error = "Source and destination must be different."; return false; }
         if (destination.IsPublicFile) { error = "A public direct file link can only be used as a source."; return false; }
         if (source.IsPublicFile && destination.Kind != LocationKind.Local) { error = "Public direct file links can only be copied to a local folder."; return false; }
-        if (source.IsPublicFile && job.Mode != TransferMode.Copy) { error = "Public direct file links support Copy only; Sync requires a folder source."; return false; }
         if (source.IsPublicFile && string.IsNullOrWhiteSpace(source.DirectUrl)) { error = "This public file link does not contain a usable download URL."; return false; }
         if (requireConnections && source.IsCloud && !_config.HasRemote(source.RemoteName)) { error = $"Connect {source.DisplayProvider} before starting this transfer."; return false; }
         if (requireConnections && destination.IsCloud && !_config.HasRemote(destination.RemoteName)) { error = $"Connect {destination.DisplayProvider} before starting this transfer."; return false; }
@@ -53,8 +58,9 @@ public sealed class TransferService
         RcloneConfigService.PreparedConfig? prepared = null;
         try
         {
-            prepared = _config.PrepareConfig(source!, destination!, job.Id);
-            var args = BuildArguments(job.Mode, source!, destination!, prepared, dryRun: true, Array.Empty<string>());
+            var effectiveDestination = await ResolveFolderCopyDestinationAsync(source!, destination!, cancellationToken);
+            prepared = _config.PrepareConfig(source!, effectiveDestination, job.Id);
+            var args = BuildArguments(source!, effectiveDestination, prepared, dryRun: true, Array.Empty<string>());
             var result = await _runner.RunAsync(args, prepared.Path, onLine, cancellationToken);
             var changes = ParseChanges(result.Lines);
             return new(result.ExitCode == 0, changes, result.Lines, result.ExitCode == 0 ? null : GetFriendlyError(result.Lines));
@@ -73,6 +79,9 @@ public sealed class TransferService
     public async Task<RcloneRunResult> RunAsync(TransferRequest request, Action<ProgressInfo>? onProgress, Action<string>? onLine, CancellationToken cancellationToken = default)
     {
         if (!TryResolveJob(request.Job, out var source, out var destination, out var error)) throw new InvalidOperationException(error);
+        var effectiveDestination = source!.IsPublicFile
+            ? destination!
+            : await ResolveFolderCopyDestinationAsync(source, destination!, cancellationToken);
         var logPath = _log.CreateTransferLog(request.Job.Name, GetRcloneVersion());
         void Capture(string line)
         {
@@ -81,7 +90,7 @@ public sealed class TransferService
             onProgress?.Invoke(ParseProgress(line));
         }
         _log.WriteFile(logPath, $"Source: {DescribeLocation(source!)}");
-        _log.WriteFile(logPath, $"Destination: {DescribeLocation(destination!)}");
+        _log.WriteFile(logPath, $"Destination: {DescribeLocation(effectiveDestination)}");
         _log.WriteFile(logPath, $"Mode: {request.Job.Mode}");
 
         if (source!.IsPublicFile)
@@ -94,11 +103,66 @@ public sealed class TransferService
         RcloneConfigService.PreparedConfig? prepared = null;
         try
         {
-            prepared = _config.PrepareConfig(source, destination!, request.Job.Id);
-            var args = BuildArguments(request.Job.Mode, source, destination!, prepared, false, request.ExcludedPaths);
+            prepared = _config.PrepareConfig(source, effectiveDestination, request.Job.Id);
+            var args = BuildArguments(source, effectiveDestination, prepared, false, request.ExcludedPaths);
             return await _runner.RunAsync(args, prepared.Path, Capture, cancellationToken);
         }
         finally { if (prepared is not null) _config.Cleanup(prepared); }
+    }
+
+    private async Task<ResolvedLocation> ResolveFolderCopyDestinationAsync(ResolvedLocation source, ResolvedLocation destination, CancellationToken cancellationToken)
+    {
+        string folderName;
+        if (source.Kind == LocationKind.GoogleDrive
+            && string.IsNullOrWhiteSpace(source.Path)
+            && !string.IsNullOrWhiteSpace(source.RootFolderId))
+        {
+            folderName = await _googleFolderNames.GetFolderNameAsync(source.RootFolderId, cancellationToken)
+                ?? throw new InvalidOperationException("Could not determine the Google Drive source folder name. Refresh the connection and try again.");
+        }
+        else folderName = GetSourceFolderName(source);
+
+        return AppendFolderToDestination(destination, folderName);
+    }
+
+    public static string GetSourceFolderName(ResolvedLocation source)
+    {
+        if (source.Kind == LocationKind.Local)
+        {
+            var trimmed = source.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var name = Path.GetFileName(trimmed);
+            if (!string.IsNullOrWhiteSpace(name)) return name;
+        }
+
+        var normalized = source.Path.Replace('\\', '/').Trim('/');
+        if (!string.IsNullOrWhiteSpace(normalized)) return normalized.Split('/').Last();
+        throw new InvalidOperationException("Could not determine the source folder name.");
+    }
+
+    public static ResolvedLocation AppendFolderToDestination(ResolvedLocation destination, string folderName)
+    {
+        var segment = SanitizeFolderSegment(folderName, destination.Kind == LocationKind.Local);
+        if (string.IsNullOrWhiteSpace(segment)) throw new InvalidOperationException("The source folder name is not usable at the destination.");
+        var path = destination.Kind == LocationKind.Local
+            ? Path.Combine(destination.Path, segment)
+            : string.IsNullOrWhiteSpace(destination.Path)
+                ? segment
+                : $"{destination.Path.Replace('\\', '/').TrimEnd('/')}/{segment}";
+        return destination with { Path = path };
+    }
+
+    public static string? ParseGoogleFolderNameResponse(string json) =>
+        GoogleDriveFolderNameService.ParseFolderNameResponse(json);
+
+    private static string SanitizeFolderSegment(string folderName, bool local)
+    {
+        var value = folderName.Trim();
+        if (local)
+        {
+            foreach (var invalid in Path.GetInvalidFileNameChars()) value = value.Replace(invalid, '_');
+        }
+        else value = value.Replace('/', '／').Replace('\\', '＼');
+        return value.Trim().Trim('.');
     }
 
     private static async Task<string> ResolvePublicFileDestinationAsync(string directUrl, string destinationFolder, CancellationToken cancellationToken)
@@ -170,11 +234,10 @@ public sealed class TransferService
         return location.Path;
     }
 
-    private static List<string> BuildArguments(TransferMode mode, ResolvedLocation source, ResolvedLocation destination, RcloneConfigService.PreparedConfig prepared, bool dryRun, IReadOnlyCollection<string> excluded)
+    private static List<string> BuildArguments(ResolvedLocation source, ResolvedLocation destination, RcloneConfigService.PreparedConfig prepared, bool dryRun, IReadOnlyCollection<string> excluded)
     {
-        var command = mode == TransferMode.Copy ? "copy" : "sync";
-        var args = new List<string> { command, ToSpec(source, prepared.SourceRemote), ToSpec(destination, prepared.DestinationRemote), "--stats", "1s", "--stats-one-line", "--stats-one-line-date", "--stats-log-level", "NOTICE", "--log-level", "INFO", "--retries", "2", "--low-level-retries", "5" };
-        if (mode == TransferMode.Copy) args.Add("--create-empty-src-dirs");
+        var args = new List<string> { "copy", ToSpec(source, prepared.SourceRemote), ToSpec(destination, prepared.DestinationRemote), "--stats", "1s", "--stats-one-line", "--stats-one-line-date", "--stats-log-level", "NOTICE", "--log-level", "INFO", "--retries", "2", "--low-level-retries", "5" };
+        args.Add("--create-empty-src-dirs");
         if (dryRun)
         {
             args.Add("--dry-run");

@@ -3,8 +3,8 @@ using System.Runtime.CompilerServices;
 
 namespace RcloneTransferManager.Models;
 
-public enum TransferMode { Copy, Sync }
-public enum LocationKind { Local, GoogleDrive, OneDrive, Remote, PublicFile }
+public enum TransferMode { Copy }
+public enum LocationKind { Local, GoogleDrive, Remote, PublicFile }
 public enum ConflictDecision { Overwrite, Skip }
 
 public sealed record ResolvedLocation(
@@ -15,13 +15,12 @@ public sealed record ResolvedLocation(
     string? RootFolderId,
     string? DirectUrl = null)
 {
-    public bool IsCloud => Kind is LocationKind.GoogleDrive or LocationKind.OneDrive or LocationKind.Remote;
+    public bool IsCloud => Kind is LocationKind.GoogleDrive or LocationKind.Remote;
     public bool IsPublicFile => Kind == LocationKind.PublicFile;
     public string DisplayProvider => Kind switch
     {
         LocationKind.Local => "Local folder",
         LocationKind.GoogleDrive => "Google Drive",
-        LocationKind.OneDrive => "OneDrive",
         LocationKind.PublicFile => "Public file",
         _ => "rclone remote"
     };

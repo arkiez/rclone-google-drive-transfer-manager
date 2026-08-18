@@ -14,13 +14,12 @@ public partial class AccountsWindow : Window
     private readonly IReadOnlyList<LocationKind> _autoConnectKinds;
     private bool _busy;
     private bool _googleConnected;
-    private bool _oneDriveConnected;
 
     public AccountsWindow(RcloneConfigService config, IEnumerable<LocationKind>? autoConnectKinds = null)
     {
         _config = config;
         _autoConnectKinds = (autoConnectKinds ?? Array.Empty<LocationKind>())
-            .Where(kind => kind is LocationKind.GoogleDrive or LocationKind.OneDrive)
+            .Where(kind => kind == LocationKind.GoogleDrive)
             .Distinct()
             .ToArray();
         InitializeComponent();
@@ -37,27 +36,23 @@ public partial class AccountsWindow : Window
         DoneButton.IsEnabled = true;
     }
 
-    private async Task RefreshAsync()
+    private async Task RefreshAsync(bool forceIdentityRefresh = false)
     {
         if (_busy) return;
         _busy = true;
         try
         {
             GoogleStatus.Text = "Checking connection...";
-            OneDriveStatus.Text = "Checking connection...";
             var googleTask = _config.IsConnectedAsync(LocationKind.GoogleDrive, _windowCts.Token, forceRefresh: true);
-            var oneDriveTask = _config.IsConnectedAsync(LocationKind.OneDrive, _windowCts.Token, forceRefresh: true);
-            var states = await Task.WhenAll(googleTask, oneDriveTask);
+            var states = await Task.WhenAll(googleTask);
             _googleConnected = states[0];
-            _oneDriveConnected = states[1];
             SetState(LocationKind.GoogleDrive, states[0], GoogleStatus, GoogleConnectButton, GoogleDisconnectButton);
-            SetState(LocationKind.OneDrive, states[1], OneDriveStatus, OneDriveConnectButton, OneDriveDisconnectButton);
+            await UpdateGoogleAccountIdentityAsync(states[0], forceIdentityRefresh);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             GoogleStatus.Text = $"Could not check accounts: {ex.Message}";
-            OneDriveStatus.Text = "Try Refresh again.";
         }
         finally { _busy = false; }
     }
@@ -65,20 +60,15 @@ public partial class AccountsWindow : Window
     private async void GoogleConnect_Click(object sender, RoutedEventArgs e) =>
         await ConnectAsync(LocationKind.GoogleDrive, GoogleStatus, GoogleConnectButton, GoogleDisconnectButton);
 
-    private async void OneDriveConnect_Click(object sender, RoutedEventArgs e) =>
-        await ConnectAsync(LocationKind.OneDrive, OneDriveStatus, OneDriveConnectButton, OneDriveDisconnectButton);
-
     private Task ConnectProviderAsync(LocationKind kind) => kind switch
     {
         LocationKind.GoogleDrive => ConnectAsync(LocationKind.GoogleDrive, GoogleStatus, GoogleConnectButton, GoogleDisconnectButton),
-        LocationKind.OneDrive => ConnectAsync(LocationKind.OneDrive, OneDriveStatus, OneDriveConnectButton, OneDriveDisconnectButton),
         _ => Task.CompletedTask
     };
 
     private bool IsConnected(LocationKind kind) => kind switch
     {
         LocationKind.GoogleDrive => _googleConnected,
-        LocationKind.OneDrive => _oneDriveConnected,
         _ => false
     };
 
@@ -89,6 +79,8 @@ public partial class AccountsWindow : Window
         {
             var ok = await _config.ConnectAsync(kind, line => SetStatusFromWorker(status, line), _windowCts.Token);
             SetState(kind, ok, status, connect, disconnect);
+            if (ok && kind == LocationKind.GoogleDrive)
+                await UpdateGoogleAccountIdentityAsync(true, forceRefresh: true);
             if (!ok) status.Text = "Authorization did not complete. Check the log and try again.";
         }
         catch (OperationCanceledException) { }
@@ -102,9 +94,6 @@ public partial class AccountsWindow : Window
 
     private async void GoogleDisconnect_Click(object sender, RoutedEventArgs e) =>
         await DisconnectAsync(LocationKind.GoogleDrive, GoogleStatus, GoogleConnectButton, GoogleDisconnectButton);
-
-    private async void OneDriveDisconnect_Click(object sender, RoutedEventArgs e) =>
-        await DisconnectAsync(LocationKind.OneDrive, OneDriveStatus, OneDriveConnectButton, OneDriveDisconnectButton);
 
     private async Task DisconnectAsync(LocationKind kind, WpfTextBlock status, WpfButton connect, WpfButton disconnect)
     {
@@ -127,11 +116,24 @@ public partial class AccountsWindow : Window
     private void SetState(LocationKind kind, bool connected, WpfTextBlock status, WpfButton connect, WpfButton disconnect)
     {
         if (kind == LocationKind.GoogleDrive) _googleConnected = connected;
-        if (kind == LocationKind.OneDrive) _oneDriveConnected = connected;
+        if (!connected && kind == LocationKind.GoogleDrive) GoogleAccountIdentity.Text = string.Empty;
         status.Text = connected ? "Connected and ready to use." : "Not connected — click Connect to authorize.";
         status.Foreground = (System.Windows.Media.Brush)FindResource(connected ? "SuccessBrush" : "MutedBrush");
         connect.IsEnabled = !connected;
         disconnect.IsEnabled = connected;
+    }
+
+    private async Task UpdateGoogleAccountIdentityAsync(bool connected, bool forceRefresh = false)
+    {
+        if (!connected)
+        {
+            GoogleAccountIdentity.Text = string.Empty;
+            return;
+        }
+        var identity = await _config.GetGoogleAccountIdentityAsync(_windowCts.Token, forceRefresh);
+        GoogleAccountIdentity.Text = string.IsNullOrWhiteSpace(identity)
+            ? "Connected account: email unavailable"
+            : $"Connected as: {identity}";
     }
 
     private void SetBusy(WpfButton connect, WpfButton disconnect, WpfTextBlock status, string message)
@@ -151,7 +153,7 @@ public partial class AccountsWindow : Window
         target.Text = message.Length > 180 ? message[..180] + "..." : message;
     }
 
-    private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
+    private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync(forceIdentityRefresh: true);
     private void Done_Click(object sender, RoutedEventArgs e) => Close();
 
     private void Window_Closing(object? sender, CancelEventArgs e)

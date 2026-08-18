@@ -15,19 +15,28 @@ if ($version -notmatch '^\d+\.\d+\.\d+$') {
 }
 
 $project = Join-Path $root "src\RcloneTransferManager\RcloneTransferManager.csproj"
+$updaterProject = Join-Path $root "src\RcloneTransferManager.Updater\RcloneTransferManager.Updater.csproj"
 $publish = Join-Path $root "dist\RcloneTransferManager"
+$updaterPublish = Join-Path $root "dist\RcloneTransferManager.Updater"
 $zip = Join-Path $root "RcloneTransferManager-v$version-win-x64.zip"
 $stagingZip = Join-Path $root "dist\RcloneTransferManager-v$version-win-x64.staging.zip"
 $readme = Join-Path $root "docs\RcloneTransferManager-README.txt"
 
 if (-not (Test-Path -LiteralPath $project)) { throw "Project not found: $project" }
+if (-not (Test-Path -LiteralPath $updaterProject)) { throw "Updater project not found: $updaterProject" }
 if (-not (Test-Path -LiteralPath (Join-Path $root "rclone.exe"))) { throw "Bundled rclone.exe not found." }
 if (Test-Path -LiteralPath $publish) { Remove-Item -LiteralPath $publish -Recurse -Force }
+if (Test-Path -LiteralPath $updaterPublish) { Remove-Item -LiteralPath $updaterPublish -Recurse -Force }
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
 if (Test-Path -LiteralPath $stagingZip) { Remove-Item -LiteralPath $stagingZip -Force }
 
 & $DotnetCommand publish $project --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $publish
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
+& $DotnetCommand publish $updaterProject --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:TrimMode=partial -p:DebugType=None -p:DebugSymbols=false -o $updaterPublish
+if ($LASTEXITCODE -ne 0) { throw "Updater publish failed with exit code $LASTEXITCODE." }
+$updaterExe = Join-Path $updaterPublish "RcloneTransferManager.Updater.exe"
+if (-not (Test-Path -LiteralPath $updaterExe -PathType Leaf)) { throw "Published updater executable is missing." }
+Copy-Item -LiteralPath $updaterExe -Destination (Join-Path $publish "_internal\RcloneTransferManager.Updater.exe") -Force
 
 $readmeTemplate = Get-Content -Raw -LiteralPath $readme
 if (-not $readmeTemplate.Contains("{{VERSION}}")) {
@@ -50,7 +59,9 @@ if ($rootLibraries.Count -ne 0) {
     throw "Package root contains loose DLL files: $($rootLibraries.Name -join ', ')"
 }
 $internalRclone = Join-Path $publish "_internal\rclone.exe"
+$internalUpdater = Join-Path $publish "_internal\RcloneTransferManager.Updater.exe"
 if (-not (Test-Path -LiteralPath $internalRclone -PathType Leaf)) { throw "Internal rclone backend not found: $internalRclone" }
+if (-not (Test-Path -LiteralPath $internalUpdater -PathType Leaf)) { throw "Internal updater not found: $internalUpdater" }
 foreach ($required in @("README.txt", "data", "logs")) {
     if (-not (Test-Path -LiteralPath (Join-Path $publish $required))) { throw "Required package item not found: $required" }
 }
@@ -69,6 +80,7 @@ try {
         throw "ZIP validation failed: expected one root executable named RcloneTransferManager.exe."
     }
     if ($entryNames -notcontains "_internal/rclone.exe") { throw "ZIP validation failed: _internal/rclone.exe is missing." }
+    if ($entryNames -notcontains "_internal/RcloneTransferManager.Updater.exe") { throw "ZIP validation failed: internal updater is missing." }
     if ($entryNames -notcontains "README.txt") { throw "ZIP validation failed: README.txt is missing." }
     if ($entryNames -notcontains "data/") { throw "ZIP validation failed: data/ is missing." }
     if ($entryNames -notcontains "logs/") { throw "ZIP validation failed: logs/ is missing." }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using RcloneTransferManager.Models;
 
 namespace RcloneTransferManager.Services;
@@ -19,17 +20,88 @@ public sealed class RcloneConfigService
         if (!File.Exists(AppPaths.ConfigFile)) File.WriteAllText(AppPaths.ConfigFile, string.Empty);
     }
 
-    public string RemoteName(LocationKind kind) => kind switch
-    {
-        LocationKind.GoogleDrive => "google",
-        LocationKind.OneDrive => "onedrive",
-        _ => throw new ArgumentOutOfRangeException(nameof(kind))
-    };
+    public string RemoteName(LocationKind kind) => kind == LocationKind.GoogleDrive
+        ? "google"
+        : throw new ArgumentOutOfRangeException(nameof(kind));
 
     public bool HasRemote(string name)
     {
         if (!File.Exists(AppPaths.ConfigFile)) return false;
         return File.ReadAllLines(AppPaths.ConfigFile).Any(line => line.Trim().Equals($"[{name}]", StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<string?> GetGoogleAccountIdentityAsync(CancellationToken cancellationToken = default, bool forceRefresh = false)
+    {
+        var cached = ReadCachedGoogleAccountIdentity();
+        if (!HasRemote("google"))
+        {
+            ClearGoogleAccountIdentity();
+            return null;
+        }
+        if (!forceRefresh && !string.IsNullOrWhiteSpace(cached)) return cached;
+
+        try
+        {
+            var result = await _runner.RunAsync(new[]
+            {
+                "lsjson", "google:", "--max-depth", "1", "--metadata",
+                "--drive-auth-owner-only", "--drive-metadata-owner", "read", "--log-level", "ERROR"
+            }, AppPaths.ConfigFile, null, cancellationToken);
+
+            if (result.ExitCode != 0) return cached;
+            var identity = ExtractGoogleOwner(result.Lines);
+            if (string.IsNullOrWhiteSpace(identity)) return cached;
+            SaveGoogleAccountIdentity(identity);
+            return identity;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch { return cached; }
+    }
+
+    private static string? ReadCachedGoogleAccountIdentity()
+    {
+        try
+        {
+            if (!File.Exists(AppPaths.GoogleAccountIdentityFile)) return null;
+            var value = File.ReadAllText(AppPaths.GoogleAccountIdentityFile).Trim();
+            return IsLikelyEmail(value) ? value : null;
+        }
+        catch { return null; }
+    }
+
+    private static string? ExtractGoogleOwner(IReadOnlyList<string> lines)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(string.Join(Environment.NewLine, lines));
+            if (document.RootElement.ValueKind != JsonValueKind.Array) return null;
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (!item.TryGetProperty("Metadata", out var metadata) || metadata.ValueKind != JsonValueKind.Object) continue;
+                if (!metadata.TryGetProperty("owner", out var owner)) continue;
+                var value = owner.GetString()?.Trim();
+                if (IsLikelyEmail(value)) return value;
+            }
+        }
+        catch (JsonException) { }
+        return null;
+    }
+
+    private static bool IsLikelyEmail(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && value.Contains('@') && value.IndexOf('@') > 0;
+
+    private static void SaveGoogleAccountIdentity(string identity)
+    {
+        try { File.WriteAllText(AppPaths.GoogleAccountIdentityFile, identity.Trim()); }
+        catch { }
+    }
+
+    private static void ClearGoogleAccountIdentity()
+    {
+        try { if (File.Exists(AppPaths.GoogleAccountIdentityFile)) File.Delete(AppPaths.GoogleAccountIdentityFile); }
+        catch { }
+        try { if (File.Exists(AppPaths.GoogleFolderNamesFile)) File.Delete(AppPaths.GoogleFolderNamesFile); }
+        catch { }
     }
 
     public async Task<bool> IsConnectedAsync(LocationKind kind, CancellationToken cancellationToken = default, bool forceRefresh = false)
@@ -53,7 +125,8 @@ public sealed class RcloneConfigService
     {
         AppPaths.EnsureRcloneAvailable();
         var name = RemoteName(kind);
-        var type = kind == LocationKind.GoogleDrive ? "drive" : "onedrive";
+        ClearGoogleAccountIdentity();
+        const string type = "drive";
         var arguments = HasRemote(name)
             ? new[] { "config", "reconnect", $"{name}:" }
             : new[] { "config", "create", name, type, "config_is_local", "true" };
@@ -109,11 +182,16 @@ public sealed class RcloneConfigService
         if (!HasRemote(name))
         {
             ForgetConnection(kind);
+            ClearGoogleAccountIdentity();
             return true;
         }
         var result = await _runner.RunAsync(new[] { "config", "disconnect", $"{name}:" }, AppPaths.ConfigFile, null, cancellationToken);
         var disconnected = result.ExitCode == 0;
-        if (disconnected) ForgetConnection(kind);
+        if (disconnected)
+        {
+            ForgetConnection(kind);
+            ClearGoogleAccountIdentity();
+        }
         return disconnected;
     }
 

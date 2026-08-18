@@ -1,7 +1,7 @@
 # Rclone Transfer Manager
 
-Portable Windows x64 GUI for copying and synchronizing local folders,
-Google Drive, and OneDrive through rclone.
+Portable Windows x64 GUI for copying from Google Drive or public file links
+to Google Drive or local Windows folders through rclone.
 
 The current application version is defined in `Version.props`.
 Creator: Arkie'z K. Khositkhanawut
@@ -9,13 +9,16 @@ Creator: Arkie'z K. Khositkhanawut
 ## Highlights
 
 - Compact WPF interface; no Command Prompt required.
-- Explicit Cloud or Local selectors for each transfer location.
-- Copy and Sync with conflict handling and Sync preview.
-- Google Drive and OneDrive browser OAuth.
-- Public direct-download file URL to a local folder without login.
-- Cloud folder and shared links use the connected provider account.
+- Source accepts Google Drive file/folder links and public direct file links only.
+- Destination can be Google Drive or a local Windows folder.
+- Copy mode with conflict handling; destination files are never deleted.
+- Google Drive browser OAuth with persistent login in AppData.
+- The Accounts window shows the connected Google email when available.
+- Selected source folders are preserved as top-level folders at the destination.
+- Built-in GitHub Releases updater with SHA-256 asset verification and automatic restart.
+- Automatic update checks are throttled to once per 24 hours; About also provides a manual check.
 - A completion popup confirms every successful transfer.
-- The portable package has one clear program entry point.
+- The portable package has one clear program entry point; the updater is kept under `_internal`.
 
 ## Build
 
@@ -27,13 +30,22 @@ Use the .NET 8 Windows Desktop SDK:
 The release package is created as
 `RcloneTransferManager-v<version>-win-x64.zip`.
 
+After a verified commit is pushed to `main`, publish the current version to
+GitHub Releases with:
+
+    .\scripts\release.ps1
+
+The public release repository is `arkiez/rclone-google-drive-transfer-manager`.
+The application reads its latest published release without embedding a GitHub token.
+
 After extraction, open RcloneTransferManager.exe. The bundled backend is kept
 under _internal and is started automatically; do not open or move it. To
 regenerate the checked-in program icon after changing its SVG source, run
 .\scripts\generate-icon.ps1.
 
-Runtime credentials are stored in the local data folder and are intentionally
-ignored by Git. Never commit a populated data or logs folder.
+Google Drive credentials are stored under `%APPDATA%\RcloneTransferManager`
+and are intentionally kept outside the release package. Never commit user
+credentials or populated runtime logs.
 
 ## Versioning
 

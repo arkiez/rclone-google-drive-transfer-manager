@@ -21,7 +21,7 @@
                     </Border>
                     <StackPanel Margin="10,0,0,0">
                         <TextBlock Text="Rclone Transfer Manager" FontSize="20" FontWeight="Bold"/>
-                        <TextBlock Text="Local, Google Drive, and OneDrive transfers"
+                        <TextBlock Text="Google Drive and public link sources"
                                    Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
@@ -62,10 +62,10 @@
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-                            <Path Data="{StaticResource SyncIcon}" Style="{StaticResource SectionIcon}" Margin="0,0,8,0"/>
+                            <Path Data="{StaticResource CopyIcon}" Style="{StaticResource SectionIcon}" Margin="0,0,8,0"/>
                             <StackPanel>
                                 <TextBlock Text="Transfer setup" FontSize="16" FontWeight="Bold"/>
-                                <TextBlock Text="Paste a public file download link, cloud folder link, or local folder path."
+                                <TextBlock Text="Paste a Google Drive or public file source; choose Google Drive or Local for destination."
                                            Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/>
                             </StackPanel>
                         </StackPanel>
@@ -76,47 +76,18 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,6" MinHeight="34">
                                     <TextBlock Text="Source" Foreground="{StaticResource MutedBrush}"
                                                FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <RadioButton x:Name="SourceCloudRadio"
-                                                     GroupName="SourceLocationMode"
-                                                     Style="{StaticResource SegmentedRadioButton}"
-                                                     AutomationProperties.Name="Use a cloud source">
-                                            <TextBlock Text="Cloud"/>
-                                        </RadioButton>
-                                        <RadioButton x:Name="SourceLocalRadio"
-                                                     GroupName="SourceLocationMode"
-                                                     Style="{StaticResource SegmentedRadioButton}"
-                                                     IsChecked="True" Margin="-1,0,0,0"
-                                                     AutomationProperties.Name="Use a local source">
-                                            <TextBlock Text="Local"/>
-                                        </RadioButton>
-                                    </StackPanel>
                                 </Grid>
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid Grid.Column="0">
-                                        <TextBox x:Name="SourceBox"
-                                                 TextChanged="LocationBox_TextChanged"
-                                                 AutomationProperties.Name="Source local folder"
-                                                 AutomationProperties.HelpText="Enter a local folder path or click Browse"/>
-                                        <TextBlock x:Name="SourcePlaceholder"
-                                                   Style="{StaticResource WatermarkTextStyle}"
-                                                   Text="Enter a local folder path or click Browse"/>
-                                    </Grid>
-                                    <Button x:Name="BrowseSourceButton" Grid.Column="1" Style="{StaticResource SecondaryButton}"
-                                            Click="BrowseSource_Click" Margin="8,0,0,0"
-                                            AutomationProperties.Name="Browse for source local folder">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Path Data="{StaticResource FolderIcon}" Style="{StaticResource ButtonIcon}"/>
-                                            <TextBlock Text="Browse"/>
-                                        </StackPanel>
-                                    </Button>
+                                    <TextBox x:Name="SourceBox"
+                                             TextChanged="LocationBox_TextChanged"
+                                             AutomationProperties.Name="Source cloud link"
+                                             AutomationProperties.HelpText="Paste a Google Drive file or folder link, or a public direct file link"/>
+                                    <TextBlock x:Name="SourcePlaceholder"
+                                               Style="{StaticResource WatermarkTextStyle}"
+                                               Text="Paste a Google Drive file or folder link, or a public direct file link"/>
                                 </Grid>
                                 <TextBlock x:Name="SourceStatus" Foreground="{StaticResource MutedBrush}"
                                            FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
@@ -190,20 +161,10 @@
                                                 <TextBlock Text="Copy"/>
                                             </StackPanel>
                                         </RadioButton>
-                                        <RadioButton x:Name="SyncRadio" GroupName="TransferMode"
-                                                     Style="{StaticResource SegmentedRadioButton}" Margin="-1,0,0,0"
-                                                     AutomationProperties.Name="Sync mode">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Path Data="{StaticResource SyncIcon}"
-                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
-                                                      Width="14" Height="14" Stretch="Uniform" Margin="0,0,5,0"/>
-                                                <TextBlock Text="Sync"/>
-                                            </StackPanel>
-                                        </RadioButton>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Grid.Column="1" Text="Copy never deletes destination files. Sync previews changes before applying them."
+                            <TextBlock Grid.Column="1" Text="Copy never deletes destination files."
                                        Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"
                                        VerticalAlignment="Bottom" Margin="16,0,16,3"/>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom">
@@ -238,7 +199,7 @@
         <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,1,0,0" Padding="20,8">
             <Grid>
-                <TextBlock Text="Copy is the safe default  |  Sync always previews changes"
+                <TextBlock Text="Copy mode only  |  Destination files are never deleted"
                            Foreground="{StaticResource MutedBrush}" FontSize="11"/>
                 <TextBlock x:Name="VersionText"
                            HorizontalAlignment="Right" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
