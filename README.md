@@ -3,12 +3,14 @@
 Portable Windows x64 GUI for copying from Google Drive or public file links
 to Google Drive or local Windows folders through rclone.
 
-The current application version is defined in `Version.props`.
+Current release: **v2.2.3**. The application version is defined in `Version.props`.
 Creator: Arkie'z K. Khositkhanawut
 
 ## Highlights
 
 - Compact WPF interface; no Command Prompt required.
+- Main window is fixed at 1200x520, fits its content without scrollbars, and can still be minimized.
+- Source and Destination inputs use rounded fields with in-field Clear buttons.
 - Source accepts Google Drive file/folder links and public direct file links only.
 - Destination can be Google Drive or a local Windows folder.
 - Copy mode with conflict handling; destination files are never deleted.
