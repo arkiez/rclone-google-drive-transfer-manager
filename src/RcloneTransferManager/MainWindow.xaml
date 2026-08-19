@@ -82,12 +82,20 @@
                                 </Grid>
                                 <Grid>
                                     <TextBox x:Name="SourceBox"
+                                             Style="{StaticResource RoundedInputTextBox}"
+                                             Padding="9,7,36,7"
                                              TextChanged="LocationBox_TextChanged"
                                              AutomationProperties.Name="Source cloud link"
                                              AutomationProperties.HelpText="Paste a Google Drive file or folder link, or a public direct file link"/>
                                     <TextBlock x:Name="SourcePlaceholder"
                                                Style="{StaticResource WatermarkTextStyle}"
+                                               Margin="10,0,36,0"
                                                Text="Paste a Google Drive file or folder link, or a public direct file link"/>
+                                    <Button x:Name="SourceClearButton"
+                                            Style="{StaticResource InputClearButton}"
+                                            Content="×" Visibility="Collapsed"
+                                            HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
+                                            Click="ClearSource_Click" AutomationProperties.Name="Clear source"/>
                                 </Grid>
                                 <TextBlock x:Name="SourceStatus" Foreground="{StaticResource MutedBrush}"
                                            FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
@@ -119,12 +127,20 @@
                                     </Grid.ColumnDefinitions>
                                     <Grid Grid.Column="0">
                                         <TextBox x:Name="DestinationBox"
+                                                 Style="{StaticResource RoundedInputTextBox}"
+                                                 Padding="9,7,36,7"
                                                  TextChanged="LocationBox_TextChanged"
                                                  AutomationProperties.Name="Destination local folder"
                                                  AutomationProperties.HelpText="Enter a local folder path or click Browse"/>
                                         <TextBlock x:Name="DestinationPlaceholder"
                                                    Style="{StaticResource WatermarkTextStyle}"
+                                                   Margin="10,0,36,0"
                                                    Text="Enter a local folder path or click Browse"/>
+                                        <Button x:Name="DestinationClearButton"
+                                                Style="{StaticResource InputClearButton}"
+                                                Content="×" Visibility="Collapsed"
+                                                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
+                                                Click="ClearDestination_Click" AutomationProperties.Name="Clear destination"/>
                                     </Grid>
                                     <Button x:Name="BrowseDestinationButton" Grid.Column="1" Style="{StaticResource SecondaryButton}"
                                             Click="BrowseDestination_Click" Margin="8,0,0,0"

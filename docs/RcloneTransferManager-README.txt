@@ -34,6 +34,7 @@ Google Drive authorization is stored at:
 This keeps the login available when the application folder is replaced or
 updated. Existing data\rclone.conf is migrated automatically when needed.
 The release ZIP never contains user credentials.
+Transfers use the persistent Google config directly, so refreshed OAuth tokens remain saved across transfers and application updates.
 
 Updates
 -------

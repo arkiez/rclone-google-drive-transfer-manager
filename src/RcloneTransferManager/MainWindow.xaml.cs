@@ -53,6 +53,8 @@ public partial class MainWindow : Window
     {
         UpdateWatermark(SourceBox, SourcePlaceholder);
         UpdateWatermark(DestinationBox, DestinationPlaceholder);
+        UpdateClearButton(SourceBox, SourceClearButton);
+        UpdateClearButton(DestinationBox, DestinationClearButton);
         UpdateLocationStatus(SourceBox, SourceStatus, cloudMode: true, isSource: true);
         UpdateLocationStatus(DestinationBox, DestinationStatus, DestinationCloudRadio.IsChecked == true, isSource: false);
     }
@@ -85,6 +87,21 @@ public partial class MainWindow : Window
 
     private static void UpdateWatermark(System.Windows.Controls.TextBox box, TextBlock placeholder) =>
         placeholder.Visibility = string.IsNullOrEmpty(box.Text) ? Visibility.Visible : Visibility.Collapsed;
+
+    private static void UpdateClearButton(System.Windows.Controls.TextBox box, Button button) =>
+        button.Visibility = string.IsNullOrWhiteSpace(box.Text) ? Visibility.Collapsed : Visibility.Visible;
+
+    private void ClearSource_Click(object sender, RoutedEventArgs e)
+    {
+        SourceBox.Clear();
+        SourceBox.Focus();
+    }
+
+    private void ClearDestination_Click(object sender, RoutedEventArgs e)
+    {
+        DestinationBox.Clear();
+        DestinationBox.Focus();
+    }
 
     private void UpdateLocationStatus(System.Windows.Controls.TextBox box, TextBlock status, bool cloudMode, bool isSource)
     {

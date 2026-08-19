@@ -13,6 +13,7 @@ Creator: Arkie'z K. Khositkhanawut
 - Destination can be Google Drive or a local Windows folder.
 - Copy mode with conflict handling; destination files are never deleted.
 - Google Drive browser OAuth with persistent login in AppData.
+- Transfers use the persistent Google config directly so refreshed OAuth tokens are not lost in temporary run configs.
 - The Accounts window shows the connected Google email when available.
 - Selected source folders are preserved as top-level folders at the destination.
 - Built-in GitHub Releases updater with SHA-256 asset verification and automatic restart.

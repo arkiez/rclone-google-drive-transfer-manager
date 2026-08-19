@@ -25,6 +25,19 @@ public static class AppPaths
         Directory.CreateDirectory(Logs);
         Directory.CreateDirectory(PersistentData);
         MigrateLegacyConfig();
+        CleanupStaleRunConfigs();
+    }
+
+    private static void CleanupStaleRunConfigs()
+    {
+        try
+        {
+            foreach (var path in Directory.EnumerateFiles(Data, "run-*.conf", SearchOption.TopDirectoryOnly))
+            {
+                try { File.Delete(path); } catch { }
+            }
+        }
+        catch { }
     }
 
     private static void MigrateLegacyConfig()

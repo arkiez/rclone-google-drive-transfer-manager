@@ -212,41 +212,18 @@ public sealed class RcloneConfigService
 
     public PreparedConfig PrepareConfig(ResolvedLocation source, ResolvedLocation destination, Guid jobId)
     {
-        var path = Path.Combine(AppPaths.Data, $"run-{jobId:N}.conf");
-        File.Copy(AppPaths.ConfigFile, path, true);
-        var sourceRemote = PrepareRemote(path, source, "source", jobId);
-        var destinationRemote = PrepareRemote(path, destination, "destination", jobId);
-        return new PreparedConfig(path, sourceRemote, destinationRemote);
+        var sourceRemote = PrepareRemote(source);
+        var destinationRemote = PrepareRemote(destination);
+        return new PreparedConfig(AppPaths.ConfigFile, sourceRemote, destinationRemote);
     }
 
-    private static string PrepareRemote(string path, ResolvedLocation location, string side, Guid jobId)
+    private static string PrepareRemote(ResolvedLocation location)
     {
         if (!location.IsCloud || string.IsNullOrWhiteSpace(location.RootFolderId)) return location.RemoteName;
-        var cloneName = $"{location.RemoteName}-{side}-{jobId:N}";
-        CloneSection(path, location.RemoteName, cloneName, location.RootFolderId);
-        return cloneName;
+        return $"{location.RemoteName},root_folder_id={location.RootFolderId}";
     }
 
-    private static void CloneSection(string path, string originalName, string cloneName, string rootFolderId)
-    {
-        var lines = File.ReadAllLines(path).ToList();
-        var start = lines.FindIndex(line => line.Trim().Equals($"[{originalName}]", StringComparison.OrdinalIgnoreCase));
-        if (start < 0) throw new InvalidOperationException($"The rclone remote '{originalName}' is not configured.");
-        var end = start + 1;
-        while (end < lines.Count && !lines[end].TrimStart().StartsWith("[")) end++;
-        var section = lines.GetRange(start, end - start);
-        section[0] = $"[{cloneName}]";
-        section.RemoveAll(line => line.TrimStart().StartsWith("root_folder_id", StringComparison.OrdinalIgnoreCase));
-        section.Add($"root_folder_id = {rootFolderId}");
-        lines.AddRange(new[] { string.Empty });
-        lines.AddRange(section);
-        File.WriteAllLines(path, lines);
-    }
-
-    public void Cleanup(PreparedConfig config)
-    {
-        try { File.Delete(config.Path); } catch { }
-    }
+    public void Cleanup(PreparedConfig config) { }
 
     public sealed record PreparedConfig(string Path, string SourceRemote, string DestinationRemote);
 }
