@@ -1,5 +1,5 @@
 param(
-    [string]$ExpectedVersion = "2.2.2",
+    [string]$ExpectedVersion = "2.2.3",
     [string]$BuildExe = "",
     [string]$PackageRoot = "",
     [string]$ZipPath = "",
